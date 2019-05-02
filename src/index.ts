@@ -914,7 +914,7 @@ export function initControllers(opts: InitControllersOptions): void {
             );
 
             const ROUTER_MIDDLEWARES = asArray(CONTROLLER.__use)
-                .map(rmw => wrapHandlerForController(CONTROLLER, rmw));
+                .map(rmw => wrapHandlerForController(CONTROLLER, rmw, false));
             if (ROUTER_MIDDLEWARES.length) {
                 ROUTER.use
                     .apply(ROUTER, ROUTER_MIDDLEWARES);
@@ -1102,14 +1102,14 @@ function createRouteInitializerForMethod(
                     [path as any]
                         .concat(
                             asArray(routeMiddlewares)
-                                .map(rmw => wrapHandlerForController(controller, rmw))
+                                .map(rmw => wrapHandlerForController(controller, rmw, false))
                         )
                         .concat(
                             asArray(descriptor.value[REQUEST_VALIDATORS])
-                                .map(rv => wrapHandlerForController(controller, rv))
+                                .map(rv => wrapHandlerForController(controller, rv, false))
                         )
                         .concat([
-                            wrapHandlerForController(controller, handler)]
+                            wrapHandlerForController(controller, handler, true)]
                         )
                 );
         },
@@ -1119,13 +1119,14 @@ function createRouteInitializerForMethod(
                     [path as any]
                         .concat(
                             asArray(routeMiddlewares)
-                                .map(rmw => wrapHandlerForController(controller, rmw))
+                                .map(rmw => wrapHandlerForController(controller, rmw, false))
                         )
                         .concat(
                             asArray(descriptor.value[REQUEST_VALIDATORS])
+                                .map(rv => wrapHandlerForController(controller, rv, false))
                         )
                         .concat(
-                            handlers.map(h => wrapHandlerForController(controller, h))
+                            handlers.map(h => wrapHandlerForController(controller, h, true))
                         )
                 );
         },
@@ -1358,7 +1359,10 @@ function toControllerRouteWithBodyOptions(args: any[]): ControllerRouteWithBodyO
     return opts;
 }
 
-function wrapHandlerForController(controller: Controller, handler: express.RequestHandler): express.RequestHandler {
+function wrapHandlerForController(
+    controller: Controller, handler: express.RequestHandler,
+    useSerializer: boolean
+): express.RequestHandler {
     return async function (req: express.Request, res: express.Response) {
         try {
             const HANDLER_RESULT = await Promise.resolve(
@@ -1367,22 +1371,26 @@ function wrapHandlerForController(controller: Controller, handler: express.Reque
 
             let result: any;
 
-            const SERIALIZER = controller.__serialize;
-            if (_.isNil(SERIALIZER)) {
-                // no serializer
-                result = HANDLER_RESULT;
-            } else {
-                const CTX: ResponseSerializerContext = {
-                    request: req,
-                    response: res,
-                    result: HANDLER_RESULT,
-                };
+            if (useSerializer) {
+                const SERIALIZER = controller.__serialize;
+                if (_.isNil(SERIALIZER)) {
+                    // no serializer
+                    result = HANDLER_RESULT;
+                } else {
+                    const CTX: ResponseSerializerContext = {
+                        request: req,
+                        response: res,
+                        result: HANDLER_RESULT,
+                    };
 
-                result = await Promise.resolve(
-                    SERIALIZER.apply(controller, [
-                        CTX
-                    ])
-                );
+                    result = await Promise.resolve(
+                        SERIALIZER.apply(controller, [
+                            CTX
+                        ])
+                    );
+                }
+            } else {
+                result = HANDLER_RESULT;
             }
 
             return result;
