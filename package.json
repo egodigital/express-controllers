@@ -1,6 +1,6 @@
 {
     "name": "@egodigital/express-controllers",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Sets up controllers for Express framework.",
     "author": "e.GO Digital GmbH, Aachen, Germany",
     "license": "LGPL-3.0",
@@ -41,10 +41,12 @@
     },
     "devDependencies": {
         "tslint": "^5.16.0",
+        "typedoc": "^0.14.2",
         "typescript": "^3.4.5"
     },
     "scripts": {
         "build": "(rm -r ./lib || true) && tsc && tsc -d",
-        "deploy": "npm install && npm run build && npm publish"
+        "deploy": "npm install && npm run build && npm publish",
+        "doc": "(rm -r ./doc || true) && (typedoc --out ./doc ./src)"
     }
 }

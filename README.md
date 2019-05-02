@@ -12,6 +12,10 @@ Execute the following command from your project folder, where your `package.json
 npm install --save @egodigital/express-controllers
 ```
 
+## Samples
+
+Example code can be found in [express-controllers-samples](https://github.com/egodigital/express-controllers-samples) repository.
+
 ## Usage
 
 ### Build
@@ -283,3 +287,7 @@ export class Controller extends ControllerBase {
     }
 }
 ```
+
+## Documentation
+
+The API documentation can be found [here](https://egodigital.github.io/express-controllers/).
