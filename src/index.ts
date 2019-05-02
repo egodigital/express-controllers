@@ -20,7 +20,7 @@ import * as express from 'express';
 import * as fastGlob from 'fast-glob';
 import * as joi from 'joi';
 import * as path from 'path';
-import { asArray, compareValuesBy, isJoi, normalizeString, toBooleanSafe, toStringSafe } from './utils';
+import { asArray, compareValuesBy, isEmptyString, isJoi, normalizeString, toBooleanSafe, toStringSafe } from './utils';
 
 
 /**
@@ -662,11 +662,18 @@ export function getObjectValidationFailedHandler(): ObjectValidationFailedHandle
  * @param {InitControllersOptions} opts The options.
  */
 export function initControllers(opts: InitControllersOptions): void {
-    const CONTROLLERS_DIR = path.resolve(
-        path.join(
-            __dirname, 'controllers'
-        )
-    );
+    let cwd = toStringSafe(opts.cwd);
+    if (isEmptyString(cwd)) {
+        cwd = path.join(
+            process.cwd(), 'controllers'
+        );
+    }
+    if (!path.isAbsolute(cwd)) {
+        cwd = path.join(
+            process.cwd(), cwd
+        );
+    }
+    cwd = path.resolve(cwd);
 
     const FILE_PATTERNS = asArray(opts.files)
         .map(fp => toStringSafe(fp))
@@ -681,7 +688,7 @@ export function initControllers(opts: InitControllersOptions): void {
         FILE_PATTERNS,
         {
             absolute: true,
-            cwd: CONTROLLERS_DIR,
+            cwd: cwd,
             deep: true,
             dot: false,
             followSymlinkedDirectories: true,
@@ -726,7 +733,7 @@ export function initControllers(opts: InitControllersOptions): void {
         if (CONTROLLER_CLASS) {
             const ROOT_PATH = normalizeRoutePath(
                 path.relative(
-                    CONTROLLERS_DIR,
+                    cwd,
                     path.dirname(F) + '/' + ('index' === CONTROLLER_MODULE_FILE ? '' : CONTROLLER_MODULE_FILE),
                 )
             );
@@ -762,7 +769,11 @@ export function initControllers(opts: InitControllersOptions): void {
             // 'INITIALIZE_ROUTE' function
             const METHOD_NAMES = Object.getOwnPropertyNames(
                 CONTROLLER_CLASS.prototype
-            ).sort((x, y) => {
+            ).filter(mn => {
+                return _.isFunction(
+                    CONTROLLER[mn][INITIALIZE_ROUTE]
+                );
+            }).sort((x, y) => {
                 const COMP_0 = compareValuesBy(x, y, (mn) => {
                     switch (mn) {
                         case 'index':

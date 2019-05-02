@@ -5,5 +5,4 @@ node_modules
 src
 tsconfig.json
 tslint.json
-/sandbox.js
-/sandbox/**
+lib/examples
