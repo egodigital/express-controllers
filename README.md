@@ -33,7 +33,7 @@ Then create a `/controllers/index.ts` (if using [TypeScript](https://www.typescr
 ```typescript
 import * as joi from 'joi';
 import { Request, Response } from 'express';
-import { ControllerBase, GET, POST } from '../../../index';
+import { ControllerBase, GET, POST } from '@egodigital/express-controllers';
 
 interface INewUser {
     email?: string;
@@ -111,19 +111,29 @@ export class Controller extends ControllerBase {
 }
 ```
 
-To run the example, simply execute
+For loading and initializing the controllers from `/controllers`, simply create a `/index.ts` file and use the following code snippet:
 
-```bash
-npm run example:quick_start
+```typescript
+import * as express from 'express';
+import { initControllers } from '@egodigital/express-controllers';
+
+const app = express();
+
+initControllers({
+    app,
+    cwd: __dirname + '/controllers',
+});
+
+app.listen(8080, () => {
+    console.log('Middlewares example now runs on port 8080 ...');
+});
 ```
-
-from your command line.
 
 ### Serialize
 
 ```typescript
 import { Request, Response } from 'express';
-import { ControllerBase, GET, ResponseSerializerContext } from '../../../index';
+import { ControllerBase, GET, ResponseSerializerContext } from '@egodigital/express-controllers';
 
 /**
  * /controllers/index.ts
@@ -148,7 +158,7 @@ export class Controller extends ControllerBase {
     @GET()
     public async index(req: Request, res: Response) {
         // this object is serialized and
-        // send by '__serialize()' (s. below)
+        // send by '__serialize()' (s. above)
         return {
             success: true,
             data: {
@@ -159,19 +169,11 @@ export class Controller extends ControllerBase {
 }
 ```
 
-To run the example, simply execute
-
-```bash
-npm run example:serialize
-```
-
-from your command line.
-
 ### Middlewares
 
 ```typescript
 import * as express from 'express';
-import { ControllerBase, POST } from '../../../index';
+import { ControllerBase, POST } from '@egodigital/express-controllers';
 
 interface INewUser {
     email?: string;
@@ -194,9 +196,7 @@ export class Controller extends ControllerBase {
     /**
      * [POST] /users endpoint
      */
-    @POST({
-        path: '/users',
-    })
+    @POST('/users')
     public async new_user(req: express.Request, res: express.Response) {
         const NEW_USER: INewUser = req.body;
 
@@ -210,10 +210,34 @@ export class Controller extends ControllerBase {
 }
 ```
 
-To run the example, simply execute
+### Error handling
 
-```bash
-npm run example:middlewares
+```typescript
+import * as express from 'express';
+import { ControllerBase, GET, RequestErrorHandlerContext } from '@egodigital/express-controllers';
+
+/**
+ * /controllers/index.ts
+ *
+ * Base path: '/'
+ */
+export class Controller extends ControllerBase {
+    // handle exceptions
+    public __error(context: RequestErrorHandlerContext) {
+        return context.response
+            .status(500)
+            .send('SERVER ERROR: ' + context.error);
+    }
+
+    /**
+     * [GET] / endpoint
+     */
+    @GET()
+    public async index(req: express.Request, res: express.Response) {
+        // and request error, like that
+        // will be handled by
+        // '__error()' method
+        throw new Error('Test error!');
+    }
+}
 ```
-
-from your command line.

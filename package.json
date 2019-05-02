@@ -1,6 +1,6 @@
 {
     "name": "@egodigital/express-controllers",
-    "version": "0.12.0",
+    "version": "0.13.0",
     "description": "Sets up controllers for Express framework.",
     "author": "e.GO Digital GmbH, Aachen, Germany",
     "license": "LGPL-3.0",
@@ -45,8 +45,6 @@
     },
     "scripts": {
         "build": "tsc",
-        "example:middlewares": "npm run build && node ./lib/examples/middlewares/index.js",
-        "example:quick_start": "npm run build && node ./lib/examples/quick_start/index.js",
-        "example:serialize": "npm run build && node ./lib/examples/serialize/index.js"
+        "deploy": "npm install && npm run build && npm publish"
     }
 }
