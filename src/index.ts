@@ -84,6 +84,10 @@ export interface ControllerRouteOptions {
  */
 export interface ControllerRouteWithBodyOptions extends ControllerRouteOptions {
     /**
+     * If validation is enabled, this defines the input format. Default: 'JSON'
+     */
+    format?: BodyFormat;
+    /**
      * A custom function, that handles a failed schema validation.
      */
     onValidationFailed?: ObjectValidationFailedHandler;
@@ -244,6 +248,20 @@ export type RouterPath = string | RegExp;
 
 
 /**
+ * List of body formats.‚
+ */
+export enum BodyFormat {
+    /**
+     * JSON
+     */
+    JSON = 0,
+    /**
+     * URL encoded.
+     */
+    UrlEncoded = 1,
+}
+
+/**
  * List of known reasons, why an object validation failed.
  */
 export enum ObjectValidationFailedReason {
@@ -375,19 +393,6 @@ export function DELETE(...args: any[]): DecoratorFunction {
 }
 
 /**
- * Validates input, if valid form data.
- *
- * @param {ObjectValidatorOptionsValue} [optsOrSchema] The custom options.
- */
-export function form(optsOrSchema?: ObjectValidatorOptionsValue): DecoratorFunction {
-    return function (controllerConstructor: any, name: string, descriptor: PropertyDescriptor) {
-        const VALUE = descriptor.value;
-
-        VALUE[REQUEST_VALIDATORS] = formValidate(optsOrSchema);
-    };
-}
-
-/**
  * Sets up a controller method for a GET request.
  *
  * @param {ControllerRouteOptions} [opts] The custom options.
@@ -436,19 +441,6 @@ export function HEAD(...args: any[]): DecoratorFunction {
             name, descriptor, toControllerRouteOptions(args),
             'head',
         );
-    };
-}
-
-/**
- * Validates input, if valid JSON.
- *
- * @param {ObjectValidatorOptionsValue} [optsOrSchema] The custom options.
- */
-export function json(optsOrSchema?: ObjectValidatorOptionsValue): DecoratorFunction {
-    return function (controllerConstructor: any, name: string, descriptor: PropertyDescriptor) {
-        const VALUE = descriptor.value;
-
-        VALUE[REQUEST_VALIDATORS] = jsonValidate(optsOrSchema);
     };
 }
 
@@ -908,6 +900,11 @@ function createRouteInitializerForMethod(
     opts: ControllerRouteOptions | ControllerRouteWithBodyOptions,
     method: string,
 ): void {
+    let inputFormat = (opts as ControllerRouteWithBodyOptions).format;
+    if (_.isNil(inputFormat)) {
+        inputFormat = BodyFormat.JSON;
+    }
+
     createRouteInitializer(
         name, descriptor, opts,
         (controller, path, handler) => {
@@ -925,18 +922,40 @@ function createRouteInitializerForMethod(
         (opts) => {
             const SCHEMA: joi.AnySchema = (opts as ControllerRouteWithBodyOptions).schema;
             if (isJoi(SCHEMA)) {
-                const JSON_HANDLERS = jsonValidate(
-                    {
-                        failedHandler: (opts as ControllerRouteWithBodyOptions).onValidationFailed,
-                        schema: SCHEMA,
-                    },
-                    req => method !== normalizeString(req.method),
-                );
+                let inputHandlers: express.RequestHandler[];
+                switch (inputFormat) {
+                    case BodyFormat.JSON:
+                        // JSON
+                        inputHandlers = jsonValidate(
+                            {
+                                failedHandler: (opts as ControllerRouteWithBodyOptions).onValidationFailed,
+                                schema: SCHEMA,
+                            },
+                            req => method !== normalizeString(req.method),
+                        );
+                        break;
+
+                    case BodyFormat.UrlEncoded:
+                        // form / url encoded
+                        inputHandlers = formValidate(
+                            {
+                                failedHandler: (opts as ControllerRouteWithBodyOptions).onValidationFailed,
+                                schema: SCHEMA,
+                            },
+                            req => method !== normalizeString(req.method),
+                        );
+                        break;
+
+                    default:
+                        throw new Error(`BodyFormat '${inputFormat}' is not supported!`);
+                }
 
                 // append to current list
                 descriptor.value[REQUEST_VALIDATORS] = asArray(
                     descriptor.value[REQUEST_VALIDATORS]
-                ).concat(JSON_HANDLERS);
+                ).concat(
+                    asArray(inputHandlers)
+                );
             }
         }
     );
