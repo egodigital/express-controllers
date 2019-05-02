@@ -45,6 +45,7 @@
     },
     "scripts": {
         "build": "tsc",
+        "example:middlewares": "npm run build && node ./lib/examples/middlewares/index.js",
         "example:quick_start": "npm run build && node ./lib/examples/quick_start/index.js",
         "example:serialize": "npm run build && node ./lib/examples/serialize/index.js"
     }

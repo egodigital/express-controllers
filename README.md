@@ -111,6 +111,14 @@ export class Controller extends ControllerBase {
 }
 ```
 
+To run the example, simply execute
+
+```bash
+npm run example:quick_start
+```
+
+from your command line.
+
 ### Serialize
 
 ```typescript
@@ -123,6 +131,17 @@ import { ControllerBase, GET, ResponseSerializerContext } from '../../../index';
  * Base path: '/'
  */
 export class Controller extends ControllerBase {
+    // serialize the results of any
+    // controller route method and
+    // send each as response
+    public __serialize(context: ResponseSerializerContext) {
+        return context.response
+            .header('Content-Type', 'application/json')
+            .send(JSON.stringify(
+                context.result  // result of 'index()', e.g.
+            ));
+    }
+
     /**
      * [GET] / relative endpoint
      */
@@ -137,16 +156,64 @@ export class Controller extends ControllerBase {
             },
         };
     }
+}
+```
 
-    // serialize the results of any
-    // controller route method and
-    // send each as response
-    public __serialize(context: ResponseSerializerContext) {
-        return context.response
-            .header('Content-Type', 'application/json')
-            .send(JSON.stringify(
-                context.result  // result of 'index()', e.g.
+To run the example, simply execute
+
+```bash
+npm run example:serialize
+```
+
+from your command line.
+
+### Middlewares
+
+```typescript
+import * as express from 'express';
+import { ControllerBase, POST } from '../../../index';
+
+interface INewUser {
+    email?: string;
+    password: string;
+    username: string;
+}
+
+/**
+ * /controllers/index.ts
+ *
+ * Base path: '/'
+ */
+export class Controller extends ControllerBase {
+    // define one or more middlewares
+    // for each route endpoint
+    public __use = [
+        express.urlencoded({ extended: true }),
+    ];
+
+    /**
+     * [POST] /users endpoint
+     */
+    @POST({
+        path: '/users',
+    })
+    public async new_user(req: express.Request, res: express.Response) {
+        const NEW_USER: INewUser = req.body;
+
+        // TODO ...
+
+        return res.status(200)
+            .send('Created new user: ' + JSON.stringify(
+                NEW_USER, null, 2
             ));
     }
 }
 ```
+
+To run the example, simply execute
+
+```bash
+npm run example:middlewares
+```
+
+from your command line.
