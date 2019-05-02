@@ -129,6 +129,46 @@ app.listen(8080, () => {
 });
 ```
 
+The library will scan the complete `/controllers` folder structure and map the endpoints by that structure.
+
+You can also use other filenames as `index.ts`. For example, if you would like to implement a `/foo/bar` endpoint, create a `/controllers/foo/bar.ts` and use the following snippet:
+
+```typescript
+import { Request, Response } from 'express';
+import { ControllerBase, GET } from '@egodigital/express-controllers';
+
+/**
+ * /controllers/foo/bar.ts
+ *
+ * Base path: '/foo/bar'
+ */
+export class Controller extends ControllerBase {
+    /**
+     * [GET] /foo/bar endpoint
+     */
+    @GET()
+    public async index(req: Request, res: Response) {
+        // TODO
+    }
+
+    /**
+     * [GET] /foo/bar/xyz endpoint
+     */
+    @GET()
+    public async xyz(req: Request, res: Response) {
+        // TODO
+    }
+
+    /**
+     * [GET] /foo/bar/tm endpoint
+     */
+    @GET('/tm')
+    public async xyz(req: Request, res: Response) {
+        // TODO
+    }
+}
+```
+
 ### Serialize
 
 ```typescript
