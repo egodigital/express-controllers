@@ -1080,12 +1080,16 @@ function createRouteInitializerForMethod(
     method: string,
 ): void {
     let inputFormat: number;
+    let routeMiddlewares: express.RequestHandler | express.RequestHandler[];
     if (!_.isNil(opts)) {
         inputFormat = parseInt(
             toStringSafe((opts as ControllerRouteWithBodyOptions).format)
                 .trim()
         );
+
+        routeMiddlewares = opts.use;
     }
+
     if (isNaN(inputFormat)) {
         inputFormat = BodyFormat.JSON;
     }
@@ -1097,7 +1101,7 @@ function createRouteInitializerForMethod(
                 .apply(controller.__router,
                     [path as any]
                         .concat(
-                            asArray(opts.use)
+                            asArray(routeMiddlewares)
                                 .map(rmw => wrapHandlerForController(controller, rmw))
                         )
                         .concat(
@@ -1114,7 +1118,7 @@ function createRouteInitializerForMethod(
                 .apply(controller.__router,
                     [path as any]
                         .concat(
-                            asArray(opts.use)
+                            asArray(routeMiddlewares)
                                 .map(rmw => wrapHandlerForController(controller, rmw))
                         )
                         .concat(
