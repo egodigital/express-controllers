@@ -125,7 +125,7 @@ initControllers({
 });
 
 app.listen(8080, () => {
-    console.log('Middlewares example now runs on port 8080 ...');
+    // server now running
 });
 ```
 
