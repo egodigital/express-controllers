@@ -1093,17 +1093,34 @@ function createRouteInitializerForMethod(
             controller.__router[method]
                 .apply(controller.__router,
                     [path as any]
-                        .concat(asArray(opts.use).map(rmw => wrapHandlerForController(controller, rmw)))
-                        .concat(asArray(descriptor.value[REQUEST_VALIDATORS]).map(rv => wrapHandlerForController(controller, rv)))
-                        .concat([wrapHandlerForController(controller, handler)]));
+                        .concat(
+                            asArray(opts.use)
+                                .map(rmw => wrapHandlerForController(controller, rmw))
+                        )
+                        .concat(
+                            asArray(descriptor.value[REQUEST_VALIDATORS])
+                                .map(rv => wrapHandlerForController(controller, rv))
+                        )
+                        .concat([
+                            wrapHandlerForController(controller, handler)]
+                        )
+                );
         },
         (controller, path, handlers) => {
             controller.__router[method]
                 .apply(controller.__router,
                     [path as any]
-                        .concat(asArray(opts.use).map(rmw => wrapHandlerForController(controller, rmw)))
-                        .concat(asArray(descriptor.value[REQUEST_VALIDATORS]))
-                        .concat(handlers.map(h => wrapHandlerForController(controller, h))));
+                        .concat(
+                            asArray(opts.use)
+                                .map(rmw => wrapHandlerForController(controller, rmw))
+                        )
+                        .concat(
+                            asArray(descriptor.value[REQUEST_VALIDATORS])
+                        )
+                        .concat(
+                            handlers.map(h => wrapHandlerForController(controller, h))
+                        )
+                );
         },
         (opts) => {
             const SCHEMA: joi.AnySchema = (opts as ControllerRouteWithBodyOptions).schema;
