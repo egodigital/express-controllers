@@ -1,6 +1,8 @@
+[![npm](https://img.shields.io/npm/v/@egodigital/egoose.svg)](https://www.npmjs.com/package/@egodigital/express-controllers)
+
 # express-controllers
 
-Sets up controllers, which are running with [Express.js](@egodigital/express-controllers).
+Sets up controllers, which are running with [Express.js](https://expressjs.com/).
 
 ## Install
 
