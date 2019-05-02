@@ -274,7 +274,7 @@ export class Controller extends ControllerBase {
      */
     @GET()
     public async index(req: express.Request, res: express.Response) {
-        // and request error, like that
+        // all request error, like that
         // will be handled by
         // '__error()' method
         throw new Error('Test error!');
