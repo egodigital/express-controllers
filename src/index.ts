@@ -81,6 +81,10 @@ export interface ControllerRouteOptions {
      * A custom path.
      */
     path?: RouterPath;
+    /**
+     * Additional middleware(s) for the route.
+     */
+    use?: express.RequestHandler | express.RequestHandler[];
 }
 
 /**
@@ -909,11 +913,11 @@ export function initControllers(opts: InitControllersOptions): void {
                 F,
             );
 
-            const USE_HANDLERS = asArray(CONTROLLER.__use)
-                .map(uh => wrapHandlerForController(CONTROLLER, uh));
-            if (USE_HANDLERS.length) {
+            const ROUTER_MIDDLEWARES = asArray(CONTROLLER.__use)
+                .map(rmw => wrapHandlerForController(CONTROLLER, rmw));
+            if (ROUTER_MIDDLEWARES.length) {
                 ROUTER.use
-                    .apply(ROUTER, USE_HANDLERS);
+                    .apply(ROUTER, ROUTER_MIDDLEWARES);
             }
 
             if (!_.isNil(CONTROLLER.__init)) {
@@ -1088,13 +1092,17 @@ function createRouteInitializerForMethod(
         (controller, path, handler) => {
             controller.__router[method]
                 .apply(controller.__router,
-                    [path as any].concat(asArray(descriptor.value[REQUEST_VALIDATORS]))
+                    [path as any]
+                        .concat(asArray(opts.use).map(rmw => wrapHandlerForController(controller, rmw)))
+                        .concat(asArray(descriptor.value[REQUEST_VALIDATORS]).map(rv => wrapHandlerForController(controller, rv)))
                         .concat([wrapHandlerForController(controller, handler)]));
         },
         (controller, path, handlers) => {
             controller.__router[method]
                 .apply(controller.__router,
-                    [path as any].concat(asArray(descriptor.value[REQUEST_VALIDATORS]))
+                    [path as any]
+                        .concat(asArray(opts.use).map(rmw => wrapHandlerForController(controller, rmw)))
+                        .concat(asArray(descriptor.value[REQUEST_VALIDATORS]))
                         .concat(handlers.map(h => wrapHandlerForController(controller, h))));
         },
         (opts) => {
