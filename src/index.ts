@@ -1079,10 +1079,13 @@ function createRouteInitializerForMethod(
     opts: ControllerRouteOptions | ControllerRouteWithBodyOptions,
     method: string,
 ): void {
-    let inputFormat = parseInt(
-        toStringSafe((opts as ControllerRouteWithBodyOptions).format)
-            .trim()
-    );
+    let inputFormat: number;
+    if (!_.isNil(opts)) {
+        inputFormat = parseInt(
+            toStringSafe((opts as ControllerRouteWithBodyOptions).format)
+                .trim()
+        );
+    }
     if (isNaN(inputFormat)) {
         inputFormat = BodyFormat.JSON;
     }

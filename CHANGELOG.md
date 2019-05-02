@@ -1,5 +1,5 @@
 # Change Log (@egodigital/express-controllers)
 
-## [unreleased]
+## 1.0.2
 
-* @TODO: initial release
+* initial release
