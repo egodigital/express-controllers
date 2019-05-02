@@ -74,6 +74,10 @@ export interface Controller {
  */
 export interface ControllerRouteOptions {
     /**
+     * A custom error handler for the route.
+     */
+    onError?: RequestErrorHandler;
+    /**
      * A custom path.
      */
     path?: RouterPath;
@@ -278,6 +282,8 @@ export enum ObjectValidationFailedReason {
 
 const INITIALIZE_ROUTE = Symbol('INITIALIZE_ROUTE');
 let objValidateFailedHandler: ObjectValidationFailedHandler;
+let reqErrorHandler: RequestErrorHandler;
+const REQUEST_ERROR_HANDLER = Symbol('REQUEST_ERROR_HANDLER');
 const REQUEST_VALIDATORS = Symbol('REQUEST_VALIDATORS');
 
 
@@ -787,6 +793,25 @@ export function getObjectValidationFailedHandler(): ObjectValidationFailedHandle
 }
 
 /**
+ * Returns the global error handler, if a request fails.
+ *
+ * @return {RequestErrorHandler} The handler.
+ */
+export function getRequestErrorHandler(): RequestErrorHandler {
+    let handler: RequestErrorHandler = reqErrorHandler;
+    if (_.isNil(handler)) {
+        // default
+
+        handler = (ctx) => {
+            return ctx.response.status(500)
+                .send();
+        };
+    }
+
+    return handler;
+}
+
+/**
  * Initializes contollers.
  *
  * @param {InitControllersOptions} opts The options.
@@ -934,12 +959,23 @@ export function initControllers(opts: InitControllersOptions): void {
 /**
  * Sets the global handler, which checks if an object validation fails.
  *
- * @param {ObjectValidationFailedHandler} newHandler The new handler.
+ * @param {ObjectValidationFailedHandler|undefined|null} newHandler The new handler.
  */
 export function setObjectValidationFailedHandler(
     newHandler: ObjectValidationFailedHandler | undefined | null
 ): void {
     objValidateFailedHandler = newHandler;
+}
+
+/**
+ * Sets the global handler, which handles request errors.
+ *
+ * @param {RequestErrorHandler|undefined|null} newHandler The new handler.
+ */
+export function setRequestErrorHandler(
+    newHandler: RequestErrorHandler | undefined | null
+): void {
+    reqErrorHandler = newHandler;
 }
 
 
@@ -1009,6 +1045,7 @@ function createRouteInitializer(
             {
                 const BASE_FUNC: Function = VALUE[INITIALIZE_ROUTE];
 
+                VALUE[REQUEST_ERROR_HANDLER] = opts.onError;
                 VALUE[INITIALIZE_ROUTE] = function (controller: Controller) {
                     if (!_.isNil(BASE_FUNC)) {
                         BASE_FUNC.apply(null, arguments);
@@ -1318,14 +1355,14 @@ function wrapHandlerForController(controller: Controller, handler: express.Reque
 
             return result;
         } catch (e) {
-            let errorHandler = controller.__error;
+            let errorHandler = handler[REQUEST_ERROR_HANDLER];  // custom handler by request
             if (_.isNil(errorHandler)) {
-                // default
-
-                errorHandler = (ctx) => {
-                    return ctx.response.status(500)
-                        .send();
-                };
+                // default of controller
+                errorHandler = controller.__error;
+            }
+            if (_.isNil(errorHandler)) {
+                // (global) default
+                errorHandler = getRequestErrorHandler();
             }
 
             const CTX: RequestErrorHandlerContext = {
