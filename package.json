@@ -1,0 +1,49 @@
+{
+    "name": "@egodigital/express-controllers",
+    "version": "0.12.0",
+    "description": "Sets up controllers for Express framework.",
+    "author": "e.GO Digital GmbH, Aachen, Germany",
+    "license": "LGPL-3.0",
+    "main": "lib/index.js",
+    "private": false,
+    "directories": {
+        "lib": "lib"
+    },
+    "bugs": {
+        "url": "https://github.com/egodigital/express-controllers/issues"
+    },
+    "homepage": "https://github.com/egodigital/express-controllers#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/egodigital/express-controllers.git"
+    },
+    "keywords": [
+        "express",
+        "api",
+        "controller",
+        "mvc",
+        "http",
+        "server",
+        "rest",
+        "restful",
+        "router",
+        "app"
+    ],
+    "dependencies": {
+        "express": "^4.16.4",
+        "fast-glob": "^2.2.6",
+        "joi": "^14.3.1",
+        "lodash": "^4.17.11"
+    },
+    "devDependencies": {
+        "@types/express": "^4.16.1",
+        "@types/joi": "^14.3.3",
+        "@types/lodash": "^4.14.123",
+        "@types/node": "^10.14.6",
+        "tslint": "^5.16.0",
+        "typescript": "^3.4.5"
+    },
+    "scripts": {
+        "build": "tsc"
+    }
+}
