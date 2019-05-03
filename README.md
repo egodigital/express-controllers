@@ -28,6 +28,24 @@ npm install
 npm run build
 ```
 
+### Requirements
+
+#### TypeScript
+
+You have to enable [decorator](https://www.typescriptlang.org/docs/handbook/decorators.html) feature in your `tsconfig.json` file:
+
+```jsonc
+{
+    "compilerOptions": {
+        // ...
+
+        "experimentalDecorators": true
+    },
+    
+    // ...
+}
+```
+
 ### Examples
 
 ### Quick start
