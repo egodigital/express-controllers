@@ -208,7 +208,7 @@ export class Controller extends ControllerBase {
     // serialize the results of any
     // controller route method and
     // send each as response
-    public __serialize(context: ResponseSerializerContext) {
+    public async __serialize(context: ResponseSerializerContext) {
         return context.response
             .header('Content-Type', 'application/json')
             .send(JSON.stringify(
@@ -287,7 +287,7 @@ import { ControllerBase, GET, RequestErrorHandlerContext } from '@egodigital/exp
  */
 export class Controller extends ControllerBase {
     // handle exceptions
-    public __error(context: RequestErrorHandlerContext) {
+    public async __error(context: RequestErrorHandlerContext) {
         return context.response
             .status(500)
             .send('SERVER ERROR: ' + context.error);

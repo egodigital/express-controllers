@@ -1195,7 +1195,7 @@ function jsonValidate(
 }
 
 function objectValidate(
-    middlewares: express.RequestHandler,
+    middlewares: express.RequestHandler | express.RequestHandler[],
     optsOrSchema: ObjectValidatorOptionsValue,
     skipIf?: (req: express.Request) => boolean,
 ): express.RequestHandler[] {
