@@ -1,6 +1,6 @@
 # Change Log (@egodigital/express-controllers)
 
-## 1.1.0
+## 1.1.1
 
 * (bug)fixes
 

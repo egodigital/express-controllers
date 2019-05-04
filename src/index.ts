@@ -1274,6 +1274,8 @@ function normalizeRoutePath(p: string): string {
     p = toStringSafe(p)
         .trim();
 
+    p = p.replace(path.sep, '/');
+
     while (p.endsWith('/')) {
         p = p.substr(0, p.length - 1)
             .trim();
