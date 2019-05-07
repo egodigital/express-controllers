@@ -82,6 +82,10 @@ export interface ControllerRouteOptions {
      */
     path?: RouterPath;
     /**
+     * A custom response serializer for a route.
+     */
+    serializer?: ResponseSerializer;
+    /**
      * Additional middleware(s) for the route.
      */
     use?: express.RequestHandler | express.RequestHandler[];
@@ -289,6 +293,7 @@ let objValidateFailedHandler: ObjectValidationFailedHandler;
 let reqErrorHandler: RequestErrorHandler;
 const REQUEST_ERROR_HANDLER = Symbol('REQUEST_ERROR_HANDLER');
 const REQUEST_VALIDATORS = Symbol('REQUEST_VALIDATORS');
+const RESPONSE_SERIALIZER = Symbol('RESPONSE_SERIALIZER');
 
 
 /**
@@ -1050,6 +1055,7 @@ function createRouteInitializer(
                 const BASE_FUNC: Function = VALUE[INITIALIZE_ROUTE];
 
                 VALUE[REQUEST_ERROR_HANDLER] = opts.onError;
+                VALUE[RESPONSE_SERIALIZER] = opts.serializer;
                 VALUE[INITIALIZE_ROUTE] = function (controller: Controller) {
                     if (!_.isNil(BASE_FUNC)) {
                         BASE_FUNC.apply(null, arguments);
@@ -1374,8 +1380,13 @@ function wrapHandlerForController(
             let result: any;
 
             if (useSerializer) {
-                const SERIALIZER = controller.__serialize;
-                if (_.isNil(SERIALIZER)) {
+                let serializer: ResponseSerializer = handler[RESPONSE_SERIALIZER];
+                if (_.isNil(serializer)) {
+                    // default of controller
+                    serializer = controller.__serialize;
+                }
+
+                if (_.isNil(serializer)) {
                     // no serializer
                     result = HANDLER_RESULT;
                 } else {
@@ -1386,7 +1397,7 @@ function wrapHandlerForController(
                     };
 
                     result = await Promise.resolve(
-                        SERIALIZER.apply(controller, [
+                        serializer.apply(controller, [
                             CTX
                         ])
                     );
@@ -1397,7 +1408,7 @@ function wrapHandlerForController(
 
             return result;
         } catch (e) {
-            let errorHandler = handler[REQUEST_ERROR_HANDLER];  // custom handler by request
+            let errorHandler: RequestErrorHandler = handler[REQUEST_ERROR_HANDLER];  // custom handler by request
             if (_.isNil(errorHandler)) {
                 // default of controller
                 errorHandler = controller.__error;
