@@ -1,5 +1,12 @@
 # Change Log (@egodigital/express-controllers)
 
+## 2.0.0
+
+* code is build for [Node.js 10+](https://nodejs.org/dist/latest-v10.x/docs/api/) now
+* set compiler flags and libs to `es2017`
+* updated to `express@^4.17.0`
+* updated to `fast-glob@^2.2.7`
+
 ## 1.2.0
 
 * added `serializer` property to [ControllerRouteOptions](https://egodigital.github.io/express-controllers/interfaces/_index_.controllerrouteoptions.html) interface
