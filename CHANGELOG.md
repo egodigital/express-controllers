@@ -1,5 +1,10 @@
 # Change Log (@egodigital/express-controllers)
 
+## 2.1.0
+
+* updated to `express@^4.17.1`
+* bugfixes
+
 ## 2.0.0
 
 * code is build for [Node.js 10+](https://nodejs.org/dist/latest-v10.x/docs/api/) now
