@@ -1,6 +1,6 @@
 {
     "name": "@egodigital/express-controllers",
-    "version": "2.1.0",
+    "version": "3.0.0",
     "description": "Sets up controllers for Express framework.",
     "author": "e.GO Digital GmbH, Aachen, Germany",
     "license": "LGPL-3.0",
@@ -33,17 +33,17 @@
     "dependencies": {
         "@types/express": "^4.17.0",
         "@types/joi": "^14.3.3",
-        "@types/lodash": "^4.14.134",
-        "@types/node": "^10.14.9",
+        "@types/lodash": "^4.14.136",
+        "@types/node": "^10.14.12",
         "express": "^4.17.1",
         "fast-glob": "^2.2.7",
         "joi": "^14.3.1",
-        "lodash": "^4.17.11"
+        "lodash": "^4.17.14"
     },
     "devDependencies": {
-        "tslint": "^5.17.0",
+        "tslint": "^5.18.0",
         "typedoc": "^0.14.2",
-        "typescript": "^3.5.1"
+        "typescript": "3.4.5"
     },
     "scripts": {
         "build": "(rm -r ./lib || true) && tsc && tsc -d",

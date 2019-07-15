@@ -306,6 +306,55 @@ export class Controller extends ControllerBase {
 }
 ```
 
+### Authorize
+
+```typescript
+import * as express from 'express';
+import { Authorize, AuthorizeFailedHandlerContext, AuthorizeHandlerContext, ControllerBase, GET, RequestErrorHandlerContext } from '@egodigital/express-controllers';
+
+/**
+ * /controllers/index.ts
+ *
+ * Base path: '/'
+ */
+export class Controller extends ControllerBase {
+    // check if authorized
+    public async __authorize(context: AuthorizeHandlerContext) {
+        // return (true) or (false)
+        // or a non empty string, which is returned as error message by default
+
+        // default: (false)
+
+        return 'The authorization has been failed';
+    }
+
+    // handle failed authorization
+    public async __authorizeFailed(context: AuthorizeFailedHandlerContext) {
+        // s. result of __authorize()
+        const ERROR_MSG = context.result as string;
+
+        return context.response
+            .status(401)
+            .send('AUTHORIZE FAILED: ' + ERROR_MSG);
+    }
+
+
+    /**
+     * [GET] / endpoint
+     */
+    @Authorize()
+    @GET()
+    public async index(req: express.Request, res: express.Response) {
+        // this will only be invoked
+        // if __authorize() returns (true)
+        // or nothing (null, undefined or empty string)
+
+        return res.status(204)
+            .send();
+    }
+}
+```
+
 ## Documentation
 
 The API documentation can be found [here](https://egodigital.github.io/express-controllers/).

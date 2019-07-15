@@ -1,5 +1,10 @@
 # Change Log (@egodigital/express-controllers)
 
+## 3.0.0
+
+* added authorization feature with `@Authorize` decorator
+* updated to `lodash@^4.17.14`
+
 ## 2.1.0
 
 * updated to `express@^4.17.1`

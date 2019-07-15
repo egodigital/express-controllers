@@ -24,6 +24,108 @@ import { asArray, compareValuesBy, isEmptyString, isJoi, normalizeString, toBool
 
 
 /**
+ * A handler, that is invoked, if authorization failed.
+ *
+ * @param {AuthorizeFailedHandlerContext<TRequest>} context The context.
+ */
+export type AuthorizeFailedHandler<TRequest extends express.Request = express.Request> = (context: AuthorizeFailedHandlerContext<TRequest>) => any;
+
+/**
+ * The context for a handler, that is invoked, if authorization failed.
+ */
+export interface AuthorizeFailedHandlerContext<TRequest extends express.Request = express.Request> {
+    /**
+     * The reason from authorization handler.
+     */
+    reason?: any;
+    /**
+     * The current HTTP request context.
+     */
+    request: TRequest;
+    /**
+     * The list of resources to check.
+     */
+    resources: string[];
+    /**
+     * The current HTTP response context.
+     */
+    response: express.Response;
+    /**
+     * The result of the underlying handler.
+     */
+    result: AuthorizeHandlerResult;
+    /**
+     * The list of roles to check.
+     */
+    roles: string[];
+}
+
+/**
+ * An authorization handler.
+ *
+ * @param {AuthorizeHandlerContext<TRequest>} context The context.
+ *
+ * @return {AuthorizeHandlerResult|PromiseLike<AuthorizeHandlerResult>} The result.
+ */
+export type AuthorizeHandler<TRequest extends express.Request = express.Request> = (context: AuthorizeHandlerContext<TRequest>) => AuthorizeHandlerResult | PromiseLike<AuthorizeHandlerResult>;
+
+/**
+ * The (execution) context of an authorization handler.
+ */
+export interface AuthorizeHandlerContext<TRequest extends express.Request = express.Request> {
+    /**
+     * Gets or sets an optional object or value,
+     * which describes why the authorization failed.
+     *
+     * This value if submitted to the 'failed handler'.
+     */
+    reason?: any;
+    /**
+     * The current HTTP request context.
+     */
+    request: TRequest;
+    /**
+     * The list of resources to check.
+     */
+    resources: string[];
+    /**
+     * The current HTTP response context.
+     */
+    response: express.Response;
+    /**
+     * The list of roles to check.
+     */
+    roles: string[];
+}
+
+/**
+ * The result of an authorization handler.
+ */
+export type AuthorizeHandlerResult = boolean | void | null | undefined | string;
+
+/**
+ * Options for an @Authorize decorator.
+ */
+export interface AuthorizeOptions {
+    /**
+     * The custom authorization handler.
+     */
+    authorize?: AuthorizeHandler;
+    /**
+     * The custom handler, if authorization failed.
+     */
+    onAuthorizeFailed?: AuthorizeFailedHandler;
+    /**
+     * One or more resource names.
+     */
+    resources?: string | string[];
+    /**
+     * One or more role names.
+     */
+    roles?: string | string[];
+}
+
+/**
  * Describes a controller.
  */
 export interface Controller {
@@ -31,6 +133,14 @@ export interface Controller {
      * The underlying Express host or router.
      */
     readonly __app: ExpressApp;
+    /**
+     * The controller-wide authorization handler.
+     */
+    readonly __authorize?: AuthorizeHandler;
+    /**
+     * The controller-wide "authorization failed handler".
+     */
+    readonly __authorizeFailed?: AuthorizeFailedHandler;
     /**
      * Writes a debug message.
      *
@@ -144,15 +254,15 @@ export interface InitControllersOptions {
 /**
  * A function that returns the response for a failed JSON validation.
  *
- * @param {ObjectValidationFailedHandlerContext} context The context.
+ * @param {ObjectValidationFailedHandlerContext<TRequest>} context The context.
  */
-export type ObjectValidationFailedHandler =
-    (context: ObjectValidationFailedHandlerContext) => any;
+export type ObjectValidationFailedHandler<TRequest extends express.Request = express.Request> =
+    (context: ObjectValidationFailedHandlerContext<TRequest>) => any;
 
 /**
  * Context of a 'ObjectValidationFailedHandler'.
  */
-export interface ObjectValidationFailedHandlerContext {
+export interface ObjectValidationFailedHandlerContext<TRequest extends express.Request = express.Request> {
     /**
      * The original value of the request body.
      */
@@ -168,7 +278,7 @@ export interface ObjectValidationFailedHandlerContext {
     /**
      * The current HTTP request context.
      */
-    request: express.Request;
+    request: TRequest;
     /**
      * The current HTTP response context.
      */
@@ -205,14 +315,14 @@ export type ObjectValidatorOptionsValue = ObjectValidatorOptions | joi.AnySchema
 /**
  * Handles a request error.
  *
- * @param {RequestErrorHandlerContext} context The context.
+ * @param {RequestErrorHandlerContext<TRequest>} context The context.
  */
-export type RequestErrorHandler = (context: RequestErrorHandlerContext) => any;
+export type RequestErrorHandler<TRequest extends express.Request = express.Request> = (context: RequestErrorHandlerContext<TRequest>) => any;
 
 /**
  * Context for 'RequestErrorHandler'.
  */
-export interface RequestErrorHandlerContext {
+export interface RequestErrorHandlerContext<TRequest extends express.Request = express.Request> {
     /**
      * The error.
      */
@@ -220,7 +330,7 @@ export interface RequestErrorHandlerContext {
     /**
      * The current HTTP request context.
      */
-    request: express.Request;
+    request: TRequest;
     /**
      * The current HTTP response context.
      */
@@ -231,18 +341,18 @@ export interface RequestErrorHandlerContext {
  * A function, that handles the result of a request handler, serializes it
  * and sends it to the requesting client.
  *
- * @param {ResponseSerializerContext} context The context.
+ * @param {ResponseSerializerContext<TRequest>} context The context.
  */
-export type ResponseSerializer = (context: ResponseSerializerContext) => any;
+export type ResponseSerializer<TRequest extends express.Request = express.Request> = (context: ResponseSerializerContext<TRequest>) => any;
 
 /**
  * The context for a 'ResponseSerializer'.
  */
-export interface ResponseSerializerContext {
+export interface ResponseSerializerContext<TRequest extends express.Request = express.Request> {
     /**
      * The request context.
      */
-    request: express.Request;
+    request: TRequest;
     /**
      * The response context.
      */
@@ -288,7 +398,10 @@ export enum ObjectValidationFailedReason {
 }
 
 
+const AUTHORIZER_OPTIONS = Symbol('AUTHORIZER_OPTIONS');
 const INITIALIZE_ROUTE = Symbol('INITIALIZE_ROUTE');
+let authorizationHandler: AuthorizeHandler;
+let authorizationFailedHandler: AuthorizeFailedHandler;
 let objValidateFailedHandler: ObjectValidationFailedHandler;
 let reqErrorHandler: RequestErrorHandler;
 const REQUEST_ERROR_HANDLER = Symbol('REQUEST_ERROR_HANDLER');
@@ -332,6 +445,72 @@ export abstract class ControllerBase implements Controller {
             console.log(message, tag);
         } catch { /* ignore */ }
     }
+}
+
+
+/**
+ * Sets up a controller method for authorization.
+ *
+ * @param {string|string[]} resources One or more resource names.
+ * @param {AuthorizeFailedHandler} [onAuthorizeFailed] Custom handler, that is invoked if authorization failes.
+ *
+ * @return {DecoratorFunction} The decorator function.
+ */
+export function Authorize(resources: string | string[], onAuthorizeFailed?: AuthorizeFailedHandler): DecoratorFunction;
+/**
+ * Sets up a controller method for authorization.
+ *
+ * @param {string|string[]} roles One or more role names.
+ * @param {string|string[]} resources One or more resource names.
+ * @param {AuthorizeFailedHandler} [onAuthorizeFailed] Custom handler, that is invoked if authorization failes.
+ *
+ * @return {DecoratorFunction} The decorator function.
+ */
+export function Authorize(roles: string | string[], resources: string | string[], onAuthorizeFailed?: AuthorizeFailedHandler): DecoratorFunction;
+/**
+ * Sets up a controller method for authorization.
+ *
+ * @param {AuthorizeHandler} authorize The custom authorization handler.
+ * @param {string|string[]} [resources] One or more resource names.
+ * @param {AuthorizeFailedHandler} [onAuthorizeFailed] Custom handler, that is invoked if authorization failes.
+ *
+ * @return {DecoratorFunction} The decorator function.
+ */
+export function Authorize(authorize: AuthorizeHandler, resources?: string | string[], onAuthorizeFailed?: AuthorizeFailedHandler): DecoratorFunction;
+/**
+ * Sets up a controller method for authorization.
+ *
+ * @param {AuthorizeHandler} authorize The custom authorization handler.
+ * @param {AuthorizeFailedHandler} onAuthorizeFailed Custom handler, that is invoked if authorization failes.
+ *
+ * @return {DecoratorFunction} The decorator function.
+ */
+export function Authorize(authorize: AuthorizeHandler, onAuthorizeFailed: AuthorizeFailedHandler): DecoratorFunction;
+/**
+ * Sets up a controller method for authorization.
+ *
+ * @param {AuthorizeHandler} authorize The custom authorization handler.
+ * @param {string|string[]} roles One or more role names.
+ * @param {string|string[]} resources One or more resource names.
+ * @param {AuthorizeFailedHandler} [onAuthorizeFailed] Custom handler, that is invoked if authorization failes.
+ *
+ * @return {DecoratorFunction} The decorator function.
+ */
+export function Authorize(authorize: AuthorizeHandler, roles: string | string[], resources: string | string[], onAuthorizeFailed?: AuthorizeFailedHandler): DecoratorFunction;
+/**
+ * Sets up a controller method for authorization.
+ *
+ * @param {AuthorizeOptions} [opts] The custom options.
+ *
+ * @return {DecoratorFunction} The decorator function.
+ */
+export function Authorize(opts?: AuthorizeOptions): DecoratorFunction;
+export function Authorize(
+    ...args: any[]
+): DecoratorFunction {
+    return function (controllerConstructor: any, name: string, descriptor: PropertyDescriptor) {
+        descriptor.value[AUTHORIZER_OPTIONS] = toAuthorizeOptions(args);
+    };
 }
 
 
@@ -773,6 +952,24 @@ export function TRACE(...args: any[]): DecoratorFunction {
 
 
 /**
+ * Returns the global handler, that is invoked if authorization of a request fails.
+ *
+ * @return {AuthorizeFailedHandler} The handler.
+ */
+export function getAuthorizeFailedHandler(): AuthorizeFailedHandler {
+    return authorizationFailedHandler;
+}
+
+/**
+ * Returns the global handler, that authorized requests.
+ *
+ * @return {AuthorizeHandler} The handler.
+ */
+export function getAuthorizeHandler(): AuthorizeHandler {
+    return authorizationHandler;
+}
+
+/**
  * Returns the global handler, if an object validation fails.
  *
  * @return {ObjectValidationFailedHandler} The handler.
@@ -966,6 +1163,28 @@ export function initControllers(opts: InitControllersOptions): void {
 }
 
 /**
+ * Sets the global handler, which is invoked if a request authorization fails.
+ *
+ * @param {AuthorizeFailedHandler|undefined|null} newHandler The new handler.
+ */
+export function setAuthorizeFailedHandler(
+    newHandler: AuthorizeFailedHandler | undefined | null
+): void {
+    authorizationFailedHandler = newHandler;
+}
+
+/**
+ * Sets the global handler, which authorizes requests.
+ *
+ * @param {AuthorizeHandler|undefined|null} newHandler The new handler.
+ */
+export function setAuthorizeHandler(
+    newHandler: AuthorizeHandler | undefined | null
+): void {
+    authorizationHandler = newHandler;
+}
+
+/**
  * Sets the global handler, which checks if an object validation fails.
  *
  * @param {ObjectValidationFailedHandler|undefined|null} newHandler The new handler.
@@ -987,6 +1206,95 @@ export function setRequestErrorHandler(
     reqErrorHandler = newHandler;
 }
 
+
+function createRouteAuthorizer(
+    controller: Controller, method: Function
+): express.RequestHandler {
+    return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        const OPTS: AuthorizeOptions = method[AUTHORIZER_OPTIONS];
+        if (!_.isNil(OPTS)) {
+            let authorizer: AuthorizeHandler = OPTS.authorize;
+            if (_.isNil(authorizer)) {
+                authorizer = controller.__authorize;  // of controller
+            }
+            if (_.isNil(authorizer)) {
+                authorizer = authorizationHandler;  // global
+            }
+
+            if (!_.isNil(authorizer)) {
+                const AUTHORIZE_CTX: AuthorizeHandlerContext = {
+                    reason: undefined,
+                    request: req,
+                    response: res,
+                    resources: asArray(OPTS.resources)
+                        .map(r => toStringSafe(r))
+                        .filter(r => '' !== r.trim()),
+                    roles: asArray(OPTS.roles)
+                        .map(r => toStringSafe(r))
+                        .filter(r => '' !== r.trim())
+                };
+
+                let authorizeResult = await Promise.resolve(
+                    authorizer(AUTHORIZE_CTX)
+                );
+
+                if (_.isNil(authorizeResult)) {
+                    authorizeResult = false;
+                }
+
+                let isAuthorized: boolean;
+                if (_.isString(authorizeResult)) {
+                    isAuthorized = '' === authorizeResult.trim();
+                } else {
+                    isAuthorized = toBooleanSafe(authorizeResult);
+                }
+
+                if (!isAuthorized) {
+                    let failedHandler: AuthorizeFailedHandler = OPTS.onAuthorizeFailed;
+                    if (_.isNil(failedHandler)) {
+                        failedHandler = controller.__authorizeFailed;  // of controller
+                    }
+                    if (_.isNil(failedHandler)) {
+                        failedHandler = authorizationFailedHandler;  // global
+                    }
+
+                    if (_.isNil(failedHandler)) {
+                        // default
+
+                        failedHandler = async (ctx) => {
+                            if (_.isString(ctx.result)) {
+                                res.status(401)
+                                    .send(ctx.result.trim());
+                            }
+
+                            return res.status(401)
+                                .send();
+                        };
+                    }
+
+                    const AUTHORIZE_FAILED_CTX: AuthorizeFailedHandlerContext = {
+                        reason: AUTHORIZE_CTX.reason,
+                        request: req,
+                        response: res,
+                        resources: asArray(OPTS.resources)
+                            .map(r => toStringSafe(r))
+                            .filter(r => '' !== r.trim()),
+                        result: authorizeResult,
+                        roles: asArray(OPTS.roles)
+                            .map(r => toStringSafe(r))
+                            .filter(r => '' !== r.trim()),
+                    };
+
+                    return Promise.resolve(
+                        failedHandler(AUTHORIZE_FAILED_CTX)
+                    );
+                }
+            }
+        }
+
+        return next();  // authorized or no handler defined
+    };
+}
 
 function createRouteInitializer(
     name: string, descriptor: PropertyDescriptor,
@@ -1100,6 +1408,8 @@ function createRouteInitializerForMethod(
         inputFormat = BodyFormat.JSON;
     }
 
+    const VALUE: Function = descriptor.value;
+
     createRouteInitializer(
         name, descriptor, opts,
         (controller, path, handler) => {
@@ -1109,6 +1419,11 @@ function createRouteInitializerForMethod(
                         .concat(
                             asArray(routeMiddlewares)
                                 .map(rmw => wrapHandlerForController(controller, rmw, false))
+                        )
+                        .concat(
+                            [
+                                createRouteAuthorizer(controller, VALUE),
+                            ].map(a => wrapHandlerForController(controller, a, false))
                         )
                         .concat(
                             asArray(descriptor.value[REQUEST_VALIDATORS])
@@ -1126,6 +1441,11 @@ function createRouteInitializerForMethod(
                         .concat(
                             asArray(routeMiddlewares)
                                 .map(rmw => wrapHandlerForController(controller, rmw, false))
+                        )
+                        .concat(
+                            [
+                                createRouteAuthorizer(controller, VALUE),
+                            ].map(a => wrapHandlerForController(controller, a, false))
                         )
                         .concat(
                             asArray(descriptor.value[REQUEST_VALIDATORS])
@@ -1295,8 +1615,83 @@ function normalizeRoutePath(p: string): string {
     return p;
 }
 
+function toAuthorizeOptions(args: any[]): AuthorizeOptions {
+    let opts: AuthorizeOptions = {} as any;
+
+    if (args.length) {
+        const FIRST_ARG = args[0];
+
+        if (
+            _.isObjectLike(FIRST_ARG) &&
+            !_.isArray(FIRST_ARG) &&
+            !_.isString(FIRST_ARG)
+        ) {
+            // [0] opts: AuthorizeOptions
+
+            opts = FIRST_ARG as AuthorizeOptions;
+        } else {
+            if (_.isFunction(FIRST_ARG)) {
+                // [0] authorize: AuthorizeHandler
+
+                opts = {
+                    authorize: FIRST_ARG as AuthorizeHandler,
+                };
+
+                if (args.length > 1) {
+                    if (_.isFunction(args[1])) {
+                        // [1] onAuthorizeFailed: AuthorizeFailedHandler
+
+                        opts.onAuthorizeFailed = args[1] as AuthorizeFailedHandler;
+                    } else {
+                        if (_.isFunction(args[2])) {
+                            // [1] resources: string | string[];
+                            // [2] onAuthorizeFailed: AuthorizeFailedHandler
+
+                            opts.resources = args[1] as string | string[];
+                            opts.onAuthorizeFailed = args[2] as AuthorizeFailedHandler;
+                        } else {
+                            // [1] roles: string | string[];
+                            // [2] resources: string | string[];
+                            // [3] onAuthorizeFailed?: AuthorizeFailedHandler
+
+                            opts.roles = args[1] as string | string[];
+                            opts.resources = args[2] as string | string[];
+                            opts.onAuthorizeFailed = args[3] as AuthorizeFailedHandler;
+                        }
+                    }
+                }
+            } else {
+                if (args.length < 2) {
+                    // [0] resources: string | string[]
+
+                    opts.resources = args[0] as string | string[];
+                } else {
+                    if (_.isFunction(args[1])) {
+                        // [0] resources: string | string[]
+                        // [1] onAuthorizeFailed?: AuthorizeFailedHandler
+
+                        opts.resources = args[0] as string | string[];
+                        opts.onAuthorizeFailed = args[1] as AuthorizeFailedHandler;
+                    } else {
+                        // [0] roles: string | string[]
+                        // [1] resources: string | string[]
+                        // [2] onAuthorizeFailed?: AuthorizeFailedHandler
+
+                        opts.roles = args[0] as string | string[];
+                        opts.resources = args[1] as string | string[];
+                        opts.onAuthorizeFailed = args[2] as AuthorizeFailedHandler;
+                    }
+                }
+            }
+        }
+    }
+
+    return opts;
+}
+
 function toControllerRouteOptions(args: any[]): ControllerRouteOptions {
     let opts: ControllerRouteOptions;
+
     if (args.length) {
         const FIRST_ARG = args[0];
 
