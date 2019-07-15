@@ -1263,11 +1263,11 @@ function createRouteAuthorizer(
 
                         failedHandler = async (ctx) => {
                             if (_.isString(ctx.result)) {
-                                res.status(401)
+                                res.status(403)
                                     .send(ctx.result.trim());
                             }
 
-                            return res.status(401)
+                            return res.status(403)
                                 .send();
                         };
                     }
