@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 3.1.0
+
+* code improvements
+
 ## 3.0.1
 
 * FIX: failed authorization returns `403` instead of `401` by default

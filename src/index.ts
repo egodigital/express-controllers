@@ -1276,13 +1276,9 @@ function createRouteAuthorizer(
                         reason: AUTHORIZE_CTX.reason,
                         request: req,
                         response: res,
-                        resources: asArray(OPTS.resources)
-                            .map(r => toStringSafe(r))
-                            .filter(r => '' !== r.trim()),
+                        resources: AUTHORIZE_CTX.resources,
                         result: authorizeResult,
-                        roles: asArray(OPTS.roles)
-                            .map(r => toStringSafe(r))
-                            .filter(r => '' !== r.trim()),
+                        roles: AUTHORIZE_CTX.roles,
                     };
 
                     return Promise.resolve(
