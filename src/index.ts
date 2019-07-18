@@ -1030,7 +1030,7 @@ export function initControllers(opts: InitControllersOptions): void {
                 const ARR = controllerConstructorArgs;
 
                 controllerConstructorArgs = [];
-                for (let i = 0; i < ARR.length; i) {
+                for (let i = 0; i < ARR.length; i++) {
                     (controllerConstructorArgs as Array<any>).push(
                         ARR[i]
                     );
