@@ -3,7 +3,7 @@ import * as express from 'express';
 import * as swaggerUi from 'swagger-ui-express';
 import * as yaml from 'js-yaml';
 import { DecoratorFunction, ExpressApp } from './index';
-import { asArray, isEmptyString, toStringSafe } from './utils';
+import { asArray, isEmptyString, toBooleanSafe, toStringSafe } from './utils';
 
 
 /**
@@ -50,6 +50,10 @@ export interface InitControllersSwaggerDocumentOptions {
  */
 export interface InitControllersSwaggerOptions {
     /**
+     * Support download of YAML and JSON files or not. Default: (true)
+     */
+    canDownload?: boolean;
+    /**
      * Custom CSS for the UI.
      */
     css?: string;
@@ -79,6 +83,10 @@ export interface InitControllersSwaggerOptions {
      * Custom (Swagger) URL.
      */
     url?: string;
+    /**
+     * One or more, optional middlewares to use.
+     */
+    use?: express.RequestHandler | express.RequestHandler[];
 }
 
 /**
@@ -169,15 +177,28 @@ export interface SwaggerInfo {
      */
     methods?: string[];
     /**
+     * Custom options.
+     */
+    options?: SwaggerOptions;
+    /**
      * The path definition.
      */
-    pathInfo: SwaggerPathDefinition;
+    pathDefinition: SwaggerPathDefinition;
     /**
      * The route(r) path.
      */
     routePath?: string;
 }
 
+/**
+ * Additional, custom options for 'Swagger()' decorator.
+ */
+export interface SwaggerOptions {
+    /**
+     * A function that updates swagger path definitions.
+     */
+    pathDefinitionUpdater?: SwaggerPathDefinitionUpdater;
+}
 
 /**
  * A swagger path definition.
@@ -185,27 +206,68 @@ export interface SwaggerInfo {
 export type SwaggerPathDefinition = any;
 
 /**
+ * Updates a Swagger path definition.
+ *
+ * @param {SwaggerPathDefinitionUpdaterContext} context The context.
+ */
+export type SwaggerPathDefinitionUpdater =
+    (context: SwaggerPathDefinitionUpdaterContext) => any;
+
+/**
+ * An execution context for a 'SwaggerPathDefinitionUpdater' function.
+ */
+export interface SwaggerPathDefinitionUpdaterContext {
+    /**
+     * The path definition to update.
+     */
+    definition: SwaggerPathDefinition;
+    /**
+     * The HTTP method.
+     */
+    method: string;
+    /**
+     * The route path.
+     */
+    path: string;
+}
+
+/**
  * Key for storing a SwaggerInfo document.
  */
 export const SWAGGER_INFO = Symbol('SWAGGER_INFO');
 
 /**
- * Sets up a controller method for a DELETE request.
+ * Defines a Swagger definition for a controller method.
  *
+ * @param {SwaggerPathDefinition} pathDefinition The path definition.
+ * @param {SwaggerOptions} [opts] Custom and additional options.
+ *
+ * @return {DecoratorFunction} The decorator function.
+ */
+export function Swagger(pathDefinition: SwaggerPathDefinition, opts?: SwaggerOptions): DecoratorFunction;
+/**
+ * Defines a Swagger definition for a controller method.
+ *
+ * @param {SwaggerPathDefinition} pathDefinition The path definition.
+ * @param {SwaggerPathDefinitionUpdater} pathDefinitionUpdater A function that updates path definitions.
+ *
+ * @return {DecoratorFunction} The decorator function.
+ */
+export function Swagger(pathDefinition: SwaggerPathDefinition, pathDefinitionUpdater: SwaggerPathDefinitionUpdater): DecoratorFunction;
+/**
+ * Defines a Swagger definition for a controller method.
+ *
+ * @param {SwaggerPathDefinitionUpdater} pathDefinitionUpdater A function that updates path definitions.
  * @param {SwaggerPathDefinition} pathDefinition The path definition.
  *
  * @return {DecoratorFunction} The decorator function.
  */
-export function Swagger(pathDefinition: SwaggerPathDefinition): DecoratorFunction {
+export function Swagger(pathDefinitionUpdater: SwaggerPathDefinitionUpdater, pathDefinition: SwaggerPathDefinition): DecoratorFunction;
+export function Swagger(...args: any[]): DecoratorFunction {
     return function (controllerConstructor: any, name: string, descriptor: PropertyDescriptor) {
         const VALUE: Function = descriptor.value;
 
-        const INFO: SwaggerInfo = {
-            pathInfo: pathDefinition,
-
-        };
-
-        VALUE[SWAGGER_INFO] = INFO;
+        VALUE[SWAGGER_INFO] = toSwaggerInfo(args);
     };
 }
 
@@ -352,7 +414,26 @@ export function setupSwaggerUI(
 
             // set for each method
             for (const METHOD of SI.methods.sort()) {
-                newSwaggerDoc.paths[SI.routePath][METHOD] = SI.pathInfo;
+                let pathDefinition = SI.pathDefinition;
+                if (SI.options) {
+                    if (SI.options.pathDefinitionUpdater) {
+                        const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
+                            definition: pathDefinition,
+                            method: METHOD.toUpperCase(),
+                            path: SI.routePath,
+                        };
+
+                        SI.options.pathDefinitionUpdater(
+                            UPDATER_CTX
+                        );
+
+                        pathDefinition = UPDATER_CTX.definition;
+                    }
+                }
+
+                if (pathDefinition) {
+                    newSwaggerDoc.paths[SI.routePath][METHOD] = pathDefinition;
+                }
             }
         }
     }
@@ -360,43 +441,94 @@ export function setupSwaggerUI(
     const ROUTER = express.Router();
 
     // setup UI
-    ROUTER.use('/', swaggerUi.serveFiles(newSwaggerDoc));
-    ROUTER.get('/', swaggerUi.setup(
-        newSwaggerDoc,
-        null,  // opts
-        null,  // options
-        css,  // customCss
-        favIcon,  // customfavIcon
-        url,  // swaggerUrl
-        title,  // customeSiteTitle
-    ));
+    {
+        const MIDDLEWARES = asArray(opts.use);
+        if (MIDDLEWARES.length) {
+            // additional middlewares
+
+            ROUTER.use.apply(
+                this, MIDDLEWARES
+            );
+        }
+
+        ROUTER.use('/', swaggerUi.serveFiles(newSwaggerDoc));
+        ROUTER.get('/', swaggerUi.setup(
+            newSwaggerDoc,
+            null,  // opts
+            null,  // options
+            css,  // customCss
+            favIcon,  // customfavIcon
+            url,  // swaggerUrl
+            title,  // customeSiteTitle
+        ));
+    }
 
     // we need a clean object here
     newSwaggerDoc = JSON.parse(
         JSON.stringify(newSwaggerDoc)
     );
 
-    // download link (JSON)
-    const JSON_DOC = JSON.stringify(newSwaggerDoc, null, 2);
-    ROUTER.get(`/json`, function (req, res) {
-        return res.status(200)
-            .header('content-type', 'application/json; charset=utf-8')
-            .header('content-disposition', `attachment; filename=api.json`)
-            .send(
-                Buffer.from(JSON_DOC, 'utf8')
-            );
-    });
+    if (toBooleanSafe(opts.canDownload, true)) {
+        // download link (JSON)
+        const JSON_DOC = JSON.stringify(newSwaggerDoc, null, 2);
+        ROUTER.get(`/json`, function (req, res) {
+            return res.status(200)
+                .header('content-type', 'application/json; charset=utf-8')
+                .header('content-disposition', `attachment; filename=api.json`)
+                .send(
+                    Buffer.from(JSON_DOC, 'utf8')
+                );
+        });
 
-    // download link (YAML)
-    const YAML_DOC = yaml.safeDump(newSwaggerDoc);
-    ROUTER.get(`/yaml`, function (req, res) {
-        return res.status(200)
-            .header('content-type', 'application/x-yaml; charset=utf-8')
-            .header('content-disposition', `attachment; filename=api.yaml`)
-            .send(
-                Buffer.from(YAML_DOC, 'utf8')
-            );
-    });
+        // download link (YAML)
+        const YAML_DOC = yaml.safeDump(newSwaggerDoc);
+        ROUTER.get(`/yaml`, function (req, res) {
+            return res.status(200)
+                .header('content-type', 'application/x-yaml; charset=utf-8')
+                .header('content-disposition', `attachment; filename=api.yaml`)
+                .send(
+                    Buffer.from(YAML_DOC, 'utf8')
+                );
+        });
+    }
 
     app.use(swaggerRoot, ROUTER);
+}
+
+function toSwaggerInfo(args: any[]): SwaggerInfo {
+    const INFO: SwaggerInfo = {
+        pathDefinition: undefined,
+    };
+
+    const FIRST_ARG: any = args[0];
+
+    if (_.isFunction(FIRST_ARG)) {
+        // [0] pathDefinitionUpdater: SwaggerPathDefinitionUpdater
+        // [1] pathDefinition: SwaggerPathDefinition
+
+        INFO.pathDefinition = args[1] as SwaggerPathDefinition;
+        INFO.options = {
+            pathDefinitionUpdater: FIRST_ARG as SwaggerPathDefinitionUpdater,
+        };
+    } else {
+        // [0] pathDefinition: SwaggerPathDefinition
+
+        INFO.pathDefinition = FIRST_ARG as SwaggerPathDefinition;
+
+        if (args.length > 1) {
+            if (_.isFunction(args[1])) {
+                // [1] pathDefinitionUpdater: SwaggerPathDefinitionUpdater
+
+                INFO.options = {
+                    pathDefinitionUpdater: args[1] as SwaggerPathDefinitionUpdater,
+                };
+            } else {
+                // [1] opts?: SwaggerOptions
+
+                INFO.options = args[1] as SwaggerOptions;
+            }
+        }
+    }
+
+    return INFO;
 }
