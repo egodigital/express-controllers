@@ -259,6 +259,7 @@ export interface SwaggerPathDefinitionUpdaterContext {
  * Key for storing a SwaggerInfo document.
  */
 export const SWAGGER_INFO = Symbol('SWAGGER_INFO');
+let swaggerPathDefinitionUpdater: SwaggerPathDefinitionUpdater;
 
 
 /**
@@ -296,6 +297,26 @@ export function Swagger(...args: any[]): DecoratorFunction {
     };
 }
 
+
+/**
+ * Returns the global function, for updating Swagger path definitions.
+ *
+ * @return {SwaggerPathDefinitionUpdater} The handler.
+ */
+export function getSwaggerPathDefinitionUpdater(): SwaggerPathDefinitionUpdater {
+    return swaggerPathDefinitionUpdater;
+}
+
+/**
+ * Sets the global function, for updating Swagger path definitions.
+ *
+ * @param {SwaggerPathDefinitionUpdater|undefined|null} newUpdater The new handler.
+ */
+export function setSwaggerPathDefinitionUpdater(
+    newUpdater: SwaggerPathDefinitionUpdater | null | undefined,
+): void {
+    swaggerPathDefinitionUpdater = newUpdater;
+}
 
 /**
  * Sets up the swagger UI for an app or router.
@@ -447,14 +468,19 @@ export function setupSwaggerUI(
             for (const METHOD of SI.methods.sort()) {
                 let pathDefinition = SI.pathDefinition;
                 if (SI.options) {
-                    if (SI.options.pathDefinitionUpdater) {
+                    let pathDefinitionUpdater = SI.options.pathDefinitionUpdater;
+                    if (_.isNil(pathDefinitionUpdater)) {
+                        pathDefinitionUpdater = getSwaggerPathDefinitionUpdater();  // global
+                    }
+
+                    if (pathDefinitionUpdater) {
                         const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
                             definition: pathDefinition,
                             method: METHOD.toUpperCase(),
                             path: SI.routePath,
                         };
 
-                        SI.options.pathDefinitionUpdater(
+                        pathDefinitionUpdater(
                             UPDATER_CTX
                         );
 
