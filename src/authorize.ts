@@ -199,6 +199,8 @@ export function Authorize(
  *
  * @param {Controller} controller The controller.
  * @param {Function} method The underlying router method.
+ *
+ * @return {express.RequestHandler} The created middle.
  */
 export function createRouteAuthorizer(
     controller: Controller, method: Function
