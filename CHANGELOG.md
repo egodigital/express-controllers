@@ -3,6 +3,8 @@
 ## 4.0.0
 
 * implemented `@Swagger` decorator
+* bug fixes
+* code cleanups and improvements
 
 ## 3.1.0
 

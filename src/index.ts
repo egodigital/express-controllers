@@ -28,11 +28,11 @@ import { asArray, compareValuesBy, isEmptyString, isJoi, normalizeString, toBool
 /**
  * Describes a controller.
  */
-export interface Controller {
+export interface Controller<TApp extends any = ExpressApp> {
     /**
-     * The underlying Express host or router.
+     * The underlying app instance.
      */
-    readonly __app: ExpressApp;
+    readonly __app: TApp;
     /**
      * The controller-wide authorization handler.
      */
@@ -78,6 +78,35 @@ export interface Controller {
      */
     __use?: express.RequestHandler | express.RequestHandler[];
 }
+
+/**
+ * A function that provides the name for a controller class.
+ *
+ * @param {string} file The underyling class file (relative path).
+ * @param {string} fullPath The underyling class file (full path).
+ *
+ * @return {string} The class name.
+ */
+export type ControllerClassNameProvider =
+    (file: string, fullPath: string) => string;
+
+/**
+ * A function that provides the arguments for the constructor of a controller class.
+ *
+ * @param {ExpressApp} app The underlying Express app / the router.
+ * @param {string} routePath The route path.
+ * @param {express.Router} router The underlying Express for the controller instance.
+ * @param {string} file The underlying file.
+ *
+ * @return {ArrayLike<any>} The list of constructors.
+ */
+export type ControllerClassConstructorArgsProvider =
+    (
+        app: ExpressApp,
+        routePath: string,
+        router: express.Router,
+        file: string,
+    ) => ArrayLike<any>;
 
 /**
  * Options for a controller route.
@@ -141,6 +170,14 @@ export interface InitControllersOptions {
      * The underlying Express host or router.
      */
     app: ExpressApp;
+    /**
+     * The custom name for the controller class or a function that provides it. Default 'Controller'
+     */
+    controllerClass?: ControllerClassNameProvider | string;
+    /**
+     * The custom list of arguments for a controller class contructor or the function that provides it.
+     */
+    controllerConstructorArgs?: ControllerClassConstructorArgsProvider | ArrayLike<any>;
     /**
      * The custom current work directory. Default: '{PROCESS}/controllers'
      */
@@ -302,6 +339,7 @@ export enum ObjectValidationFailedReason {
 }
 
 
+const DEFAULT_CONTROLLER_CLASS_NAME = 'Controller';
 const INITIALIZE_ROUTE = Symbol('INITIALIZE_ROUTE');
 let objValidateFailedHandler: ObjectValidationFailedHandler;
 const METHOD_LIST = Symbol('METHOD_LIST');
@@ -314,17 +352,17 @@ const RESPONSE_SERIALIZER = Symbol('RESPONSE_SERIALIZER');
 /**
  * A basic controller.
  */
-export abstract class ControllerBase implements Controller {
+export abstract class ControllerBase<TApp extends any = ExpressApp> implements Controller<TApp> {
     /**
      * Initializes a new instance of that class.
      *
-     * @param {ExpressApp} __app The underlying Express host or router.
+     * @param {TApp} __app The underlying app instance.
      * @param {string} __rootPath The root path.
      * @param {express.Router} __router The router.
      * @param {string} __file The path of the underyling module file.
      */
     public constructor(
-        public readonly __app: ExpressApp,
+        public readonly __app: TApp,
         public readonly __rootPath: string,
         public readonly __router: express.Router,
         public readonly __file: string,
@@ -854,6 +892,36 @@ export function initControllers(opts: InitControllersOptions): void {
     }
     cwd = path.resolve(cwd);
 
+    // controller class name
+    let controllerClassNameProvider: ControllerClassNameProvider;
+    if (!_.isNil(opts.controllerClass)) {
+        if (_.isFunction(opts.controllerClass)) {
+            controllerClassNameProvider = opts.controllerClass as ControllerClassNameProvider;
+        } else {
+            controllerClassNameProvider = () => opts.controllerClass as string;
+        }
+    }
+    if (_.isNil(controllerClassNameProvider)) {
+        // default
+        controllerClassNameProvider = () => DEFAULT_CONTROLLER_CLASS_NAME;
+    }
+
+    // constructor arguments for controller class
+    let controllerConstructorArgsProvider: ControllerClassConstructorArgsProvider;
+    if (!_.isNil(opts.controllerConstructorArgs)) {
+        if (_.isFunction(opts.controllerConstructorArgs)) {
+            controllerConstructorArgsProvider = opts.controllerConstructorArgs as ControllerClassConstructorArgsProvider;
+        } else {
+            controllerConstructorArgsProvider = () => opts.controllerConstructorArgs as ArrayLike<any>;
+        }
+    }
+    if (_.isNil(controllerConstructorArgsProvider)) {
+        // default
+        controllerConstructorArgsProvider = function () {
+            return arguments;
+        };
+    }
+
     const FILE_PATTERNS = asArray(opts.files)
         .map(fp => toStringSafe(fp))
         .filter(fp => '' !== fp.trim());
@@ -878,8 +946,9 @@ export function initControllers(opts: InitControllersOptions): void {
         }
     ) as string[]).filter(f => {
         return !path.basename(f)
-            .startsWith('_');  // files with leading undrscores are ignored
+            .startsWith('_');  // files with leading underscores are ignored
     }).sort((x, y) => {
+        // first sort by directory name
         const COMP_0 = compareValuesBy(x, y, f => {
             return normalizeString(
                 path.dirname(f)
@@ -889,7 +958,20 @@ export function initControllers(opts: InitControllersOptions): void {
             return COMP_0;
         }
 
-        compareValuesBy(x, y, f => {
+        const COMP_1 = compareValuesBy(x, y, (f) => {
+            switch (path.basename(f)) {
+                case 'index':
+                    return Number.MIN_SAFE_INTEGER;  // 'index' file is always first
+            }
+
+            return Number.MAX_SAFE_INTEGER;
+        });
+        if (0 !== COMP_1) {
+            return COMP_1;
+        }
+
+        // then by file name
+        return compareValuesBy(x, y, f => {
             return normalizeString(
                 path.basename(f)
             );
@@ -910,15 +992,20 @@ export function initControllers(opts: InitControllersOptions): void {
             )
         );
 
-        const CONTROLLER_CLASS = CONTROLLER_MODULE.Controller;
-        if (CONTROLLER_CLASS) {
-            const ROOT_PATH = normalizeRoutePath(
-                path.relative(
-                    cwd,
-                    path.dirname(F) + '/' + ('index' === CONTROLLER_MODULE_FILE ? '' : CONTROLLER_MODULE_FILE),
-                )
-            );
+        const ROOT_PATH = normalizeRoutePath(
+            path.relative(
+                cwd,
+                path.dirname(F) + '/' + ('index' === CONTROLLER_MODULE_FILE ? '' : CONTROLLER_MODULE_FILE),
+            )
+        );
 
+        // custom class name
+        let controllerClassName = controllerClassNameProvider(
+            ROOT_PATH, F,
+        );
+
+        const CONTROLLER_CLASS = CONTROLLER_MODULE[controllerClassName];
+        if (CONTROLLER_CLASS) {
             if (_.isNil(ROUTERS[ROOT_PATH])) {
                 ROUTERS[ROOT_PATH] = express.Router();
 
@@ -928,11 +1015,33 @@ export function initControllers(opts: InitControllersOptions): void {
 
             const ROUTER = ROUTERS[ROOT_PATH];
 
-            const CONTROLLER: Controller = new CONTROLLER_CLASS(
+            // constructor arguments
+            let controllerConstructorArgs = controllerConstructorArgsProvider(
                 opts.app,
                 ROOT_PATH,
                 ROUTER,
                 F,
+            );
+            if (_.isNil(controllerConstructorArgs)) {
+                controllerConstructorArgs = [];  // default
+            }
+            if (!_.isArray(controllerConstructorArgs)) {
+                // convert to array
+                const ARR = controllerConstructorArgs;
+
+                controllerConstructorArgs = [];
+                for (let i = 0; i < ARR.length; i) {
+                    (controllerConstructorArgs as Array<any>).push(
+                        ARR[i]
+                    );
+                }
+            }
+
+            // s. https://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
+            const CONTROLLER: Controller = new (Function.prototype.bind.apply(
+                CONTROLLER_CLASS, [CONTROLLER_CLASS].concat(
+                    controllerConstructorArgs
+                ))
             );
 
             const ROUTER_MIDDLEWARES = asArray(CONTROLLER.__use)
@@ -958,7 +1067,7 @@ export function initControllers(opts: InitControllersOptions): void {
                 const COMP_0 = compareValuesBy(x, y, (mn) => {
                     switch (mn) {
                         case 'index':
-                            return 0;  // index is always first
+                            return Number.MIN_SAFE_INTEGER;  // 'index' method is always first
                     }
 
                     return Number.MAX_SAFE_INTEGER;
