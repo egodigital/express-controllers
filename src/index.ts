@@ -21,7 +21,7 @@ import * as fastGlob from 'fast-glob';
 import * as joi from 'joi';
 import * as path from 'path';
 import { asArray, compareValuesBy, isEmptyString, isJoi, normalizeString, toBooleanSafe, toStringSafe } from './utils';
-import { InitControllersSwaggerOptions, setupSwaggerUI, SwaggerInfo, SWAGGER_INFO } from './swagger';
+import { setupSwaggerUI, SwaggerInfo, SWAGGER_INFO, InitControllersSwaggerOptionsValue } from './swagger';
 
 /**
  * A handler, that is invoked, if authorization failed.
@@ -252,7 +252,7 @@ export interface InitControllersOptions {
     /**
      * Swagger options.
      */
-    swagger?: InitControllersSwaggerOptions;
+    swagger?: InitControllersSwaggerOptionsValue;
 }
 
 /**

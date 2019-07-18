@@ -1,10 +1,26 @@
+/**
+ * This file is part of the @egodigital/express-controllers distribution.
+ * Copyright (c) e.GO Digital GmbH, Aachen, Germany (https://www.e-go-digital.com/)
+ *
+ * @egodigital/express-controllers is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, version 3.
+ *
+ * @egodigital/express-controllers is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 import * as _ from 'lodash';
 import * as express from 'express';
 import * as swaggerUi from 'swagger-ui-express';
 import * as yaml from 'js-yaml';
 import { DecoratorFunction, ExpressApp } from './index';
 import { asArray, isEmptyString, toBooleanSafe, toStringSafe } from './utils';
-
 
 /**
  * Possible value for an API url scheme.
@@ -88,6 +104,13 @@ export interface InitControllersSwaggerOptions {
      */
     use?: express.RequestHandler | express.RequestHandler[];
 }
+
+/**
+ * A possible value for 'swagger' property of 'InitControllersSwaggerOptions' interface.
+ *
+ * (false) indicates NOT to setup Swagger UI.
+ */
+export type InitControllersSwaggerOptionsValue = InitControllersSwaggerOptions | false;
 
 /**
  * List of Swagger definitions.
@@ -231,10 +254,12 @@ export interface SwaggerPathDefinitionUpdaterContext {
     path: string;
 }
 
+
 /**
  * Key for storing a SwaggerInfo document.
  */
 export const SWAGGER_INFO = Symbol('SWAGGER_INFO');
+
 
 /**
  * Defines a Swagger definition for a controller method.
@@ -276,13 +301,19 @@ export function Swagger(...args: any[]): DecoratorFunction {
  * Sets up the swagger UI for an app or router.
  *
  * @param {ExpressApp} app The Express app or router.
- * @param {InitControllersSwaggerOptions} opts Swagger options.
+ * @param {InitControllersSwaggerOptionsValue} optsOrFalse Swagger options.
  * @param {SwaggerInfo[]} infos The list of infos.
  */
 export function setupSwaggerUI(
-    app: ExpressApp, opts: InitControllersSwaggerOptions,
+    app: ExpressApp, optsOrFalse: InitControllersSwaggerOptionsValue,
     infos: SwaggerInfo[],
 ) {
+    if (false === optsOrFalse) {
+        return;
+    }
+
+    let opts = optsOrFalse as InitControllersSwaggerOptions;
+
     if (_.isNil(opts)) {
         opts = {} as any;
     }
@@ -494,6 +525,7 @@ export function setupSwaggerUI(
 
     app.use(swaggerRoot, ROUTER);
 }
+
 
 function toSwaggerInfo(args: any[]): SwaggerInfo {
     const INFO: SwaggerInfo = {
