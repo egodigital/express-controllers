@@ -165,6 +165,10 @@ export interface SwaggerExternalDocs {
  */
 export interface SwaggerInfo {
     /**
+     * List of supported methods.
+     */
+    methods?: string[];
+    /**
      * The path definition.
      */
     pathInfo: SwaggerPathDefinition;
@@ -184,7 +188,6 @@ export type SwaggerPathDefinition = any;
  * Key for storing a SwaggerInfo document.
  */
 export const SWAGGER_INFO = Symbol('SWAGGER_INFO');
-
 
 /**
  * Sets up a controller method for a DELETE request.
@@ -219,6 +222,10 @@ export function setupSwaggerUI(
     infos: SwaggerInfo[],
 ) {
     if (_.isNil(opts)) {
+        opts = {} as any;
+    }
+
+    if (!infos.length) {
         return;
     }
 
@@ -232,30 +239,30 @@ export function setupSwaggerUI(
     }
 
     // prepare version 2.0 document
-    const SWAGGER_DOC = {
+    let newSwaggerDoc = {
         'swagger': '2.0',
-        'info': undefined as SwaggerDocumentInfo,
-        'host': undefined as string,
-        'tags': undefined as any[],
-        'schemes': undefined as string[],
+        'info': undefined as any,
+        'host': undefined as any,
+        'tags': undefined as any,
+        'schemes': undefined as any,
         'paths': (infos.length ?
             {} : undefined) as any,
         'definitions': undefined as any,
         'externalDocs': undefined as any,
-        'basePath': undefined as string,
-        'securityDefinitions': undefined as SwaggerDefinitionList,
+        'basePath': undefined as any,
+        'securityDefinitions': undefined as any,
     };
 
     if (opts.document) {
         // basePath
         if (!isEmptyString(opts.document.basePath)) {
-            SWAGGER_DOC.basePath = toStringSafe(opts.document.basePath)
+            newSwaggerDoc.basePath = toStringSafe(opts.document.basePath)
                 .trim();
         }
 
         // host
         if (!isEmptyString(opts.document.host)) {
-            SWAGGER_DOC.host = toStringSafe(opts.document.host)
+            newSwaggerDoc.host = toStringSafe(opts.document.host)
                 .trim();
         }
 
@@ -265,84 +272,97 @@ export function setupSwaggerUI(
             .filter(x => '' !== x)
             .sort();
         if (ALL_SCHEMES.length) {
-            SWAGGER_DOC.schemes = ALL_SCHEMES;
+            newSwaggerDoc.schemes = ALL_SCHEMES;
         }
 
         // externalDocs
         if (opts.document.externalDocs) {
-            SWAGGER_DOC.externalDocs = opts.document.externalDocs;
+            newSwaggerDoc.externalDocs = opts.document.externalDocs;
         }
 
         // info
         if (opts.document.info) {
-            SWAGGER_DOC.info = opts.document.info;
+            newSwaggerDoc.info = opts.document.info;
         }
 
         // securityDefinitions
         if (opts.document.securityDefinitions) {
-            SWAGGER_DOC.securityDefinitions = opts.document.securityDefinitions;
+            newSwaggerDoc.securityDefinitions = opts.document.securityDefinitions;
+        }
+
+        // tags
+        if (opts.document.tags) {
+            newSwaggerDoc.tags = [];
+
+            for (const T in opts.document.tags) {
+                const TAG_NAME = T.trim();
+                const TAG_DESCRIPTION = toStringSafe(opts.document.tags[T])
+                    .trim();
+
+                newSwaggerDoc.tags.push({
+                    name: TAG_NAME,
+                    description: TAG_DESCRIPTION,
+                });
+            }
         }
     }
 
-    if (opts.document.tags) {
-        SWAGGER_DOC.tags = [];
-
-        for (const T in opts.document.tags) {
-            const TAG_NAME = T.trim();
-            const TAG_DESCRIPTION = toStringSafe(opts.document.tags[T])
-                .trim();
-
-            SWAGGER_DOC.tags.push({
-                name: TAG_NAME,
-                description: TAG_DESCRIPTION,
-            });
-        }
-    }
-
+    // custom CSS
     let css = toStringSafe(opts.css);
     if (isEmptyString(css)) {
         css = null;
     }
 
+    // fav icon
     let favIcon = toStringSafe(opts.favIcon);
     if (isEmptyString(favIcon)) {
         favIcon = null;
     }
 
+    // Swagger URL
     let url = toStringSafe(opts.url);
     if (isEmptyString(url)) {
         url = null;
     }
 
+    // custom site title
     let title = toStringSafe(opts.title);
     if (isEmptyString(title)) {
         title = null;
     }
 
-    if (SWAGGER_DOC.definitions) {
-        SWAGGER_DOC.definitions = {};
+    if (opts.definitions) {
+        newSwaggerDoc.definitions = {};
 
-        for (const DN of Object.keys(SWAGGER_DOC.definitions)) {
+        for (const DN of Object.keys(opts.definitions)) {
             const DEF_NAME = DN.trim();
             if ('' === DEF_NAME) {
                 continue;
             }
 
-            SWAGGER_DOC.definitions[DEF_NAME] = SWAGGER_DOC.definitions[DN];
+            newSwaggerDoc.definitions[DEF_NAME] = opts.definitions[DN];
         }
     }
 
-    if (infos.length) {
+    if (newSwaggerDoc.paths) {
+        // path definitions
+
         for (const SI of infos) {
-            SWAGGER_DOC.paths[SI.routePath] = SI.pathInfo;
+            newSwaggerDoc.paths[SI.routePath] = {};
+
+            // set for each method
+            for (const METHOD of SI.methods.sort()) {
+                newSwaggerDoc.paths[SI.routePath][METHOD] = SI.pathInfo;
+            }
         }
     }
 
     const ROUTER = express.Router();
 
-    ROUTER.use('/', swaggerUi.serveFiles(SWAGGER_DOC));
+    // setup UI
+    ROUTER.use('/', swaggerUi.serveFiles(newSwaggerDoc));
     ROUTER.get('/', swaggerUi.setup(
-        SWAGGER_DOC,
+        newSwaggerDoc,
         null,  // opts
         null,  // options
         css,  // customCss
@@ -351,25 +371,30 @@ export function setupSwaggerUI(
         title,  // customeSiteTitle
     ));
 
+    // we need a clean object here
+    newSwaggerDoc = JSON.parse(
+        JSON.stringify(newSwaggerDoc)
+    );
+
     // download link (JSON)
+    const JSON_DOC = JSON.stringify(newSwaggerDoc, null, 2);
     ROUTER.get(`/json`, function (req, res) {
         return res.status(200)
             .header('content-type', 'application/json; charset=utf-8')
             .header('content-disposition', `attachment; filename=api.json`)
             .send(
-                Buffer.from(JSON.stringify(SWAGGER_DOC, null, 2),
-                    'utf8')
+                Buffer.from(JSON_DOC, 'utf8')
             );
     });
 
     // download link (YAML)
+    const YAML_DOC = yaml.safeDump(newSwaggerDoc);
     ROUTER.get(`/yaml`, function (req, res) {
         return res.status(200)
             .header('content-type', 'application/x-yaml; charset=utf-8')
             .header('content-disposition', `attachment; filename=api.yaml`)
             .send(
-                Buffer.from(yaml.safeDump(SWAGGER_DOC),
-                    'utf8')
+                Buffer.from(YAML_DOC, 'utf8')
             );
     });
 

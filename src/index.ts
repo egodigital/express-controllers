@@ -403,10 +403,11 @@ export enum ObjectValidationFailedReason {
 
 
 const AUTHORIZER_OPTIONS = Symbol('AUTHORIZER_OPTIONS');
-const INITIALIZE_ROUTE = Symbol('INITIALIZE_ROUTE');
 let authorizationHandler: AuthorizeHandler;
 let authorizationFailedHandler: AuthorizeFailedHandler;
+const INITIALIZE_ROUTE = Symbol('INITIALIZE_ROUTE');
 let objValidateFailedHandler: ObjectValidationFailedHandler;
+const METHOD_LIST = Symbol('METHOD_LIST');
 let reqErrorHandler: RequestErrorHandler;
 const REQUEST_ERROR_HANDLER = Symbol('REQUEST_ERROR_HANDLER');
 const REQUEST_VALIDATORS = Symbol('REQUEST_VALIDATORS');
@@ -1161,7 +1162,9 @@ export function initControllers(opts: InitControllersOptions): void {
             // execute 'INITIALIZE_ROUTE' functions
             for (const MN of METHOD_NAMES) {
                 const SWAGGER: SwaggerInfo = CONTROLLER[MN][SWAGGER_INFO];
+
                 if (!_.isNil(SWAGGER)) {
+                    SWAGGER.methods = asArray<string>(CONTROLLER[MN][METHOD_LIST]);
                     SWAGGER.routePath = ROOT_PATH;
 
                     SWAGGER_INFOS.push(SWAGGER);
@@ -1420,6 +1423,17 @@ function createRouteInitializerForMethod(
     }
 
     const VALUE: Function = descriptor.value;
+
+    // method list (for Swagger UI, e.g.)
+    {
+        if (!_.isArray(VALUE[METHOD_LIST])) {
+            VALUE[METHOD_LIST] = [];
+        }
+
+        if (VALUE[METHOD_LIST].indexOf(method) < 0) {
+            VALUE[METHOD_LIST].push(method);
+        }
+    }
 
     createRouteInitializer(
         name, descriptor, opts,
@@ -1841,4 +1855,4 @@ function wrapHandlerForController(
 }
 
 
-export { Swagger, SwaggerPathDefinition } from './swagger';
+export * from './swagger';
