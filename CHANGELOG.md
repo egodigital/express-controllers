@@ -1,6 +1,6 @@
 # Change Log (@egodigital/express-controllers)
 
-## 4.0.1
+## 4.0.2
 
 * implemented `@Swagger` decorator
 * bug fixes
