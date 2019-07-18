@@ -21,7 +21,7 @@ import * as fastGlob from 'fast-glob';
 import * as joi from 'joi';
 import * as path from 'path';
 import { asArray, compareValuesBy, isEmptyString, isJoi, normalizeString, toBooleanSafe, toStringSafe } from './utils';
-
+import { InitControllersSwaggerOptions, setupSwaggerUI, SwaggerInfo, SWAGGER_INFO } from './swagger';
 
 /**
  * A handler, that is invoked, if authorization failed.
@@ -249,6 +249,10 @@ export interface InitControllersOptions {
      * One or more custom glob patterns of files to scan. Default: [ *.js, *.ts ]
      */
     files?: string | string[];
+    /**
+     * Swagger options.
+     */
+    swagger?: InitControllersSwaggerOptions;
 }
 
 /**
@@ -1080,6 +1084,8 @@ export function initControllers(opts: InitControllersOptions): void {
 
     const ROUTERS: { [path: string]: express.Router } = {};
 
+    const SWAGGER_INFOS: SwaggerInfo[] = [];
+
     for (const F of FILES) {
         const CONTROLLER_MODULE_FILE = path.basename(F, path.extname(F));
 
@@ -1154,12 +1160,21 @@ export function initControllers(opts: InitControllersOptions): void {
 
             // execute 'INITIALIZE_ROUTE' functions
             for (const MN of METHOD_NAMES) {
+                const SWAGGER: SwaggerInfo = CONTROLLER[MN][SWAGGER_INFO];
+                if (!_.isNil(SWAGGER)) {
+                    SWAGGER.routePath = ROOT_PATH;
+
+                    SWAGGER_INFOS.push(SWAGGER);
+                }
+
                 CONTROLLER[MN][INITIALIZE_ROUTE](
                     CONTROLLER
                 );
             }
         }
     }
+
+    setupSwaggerUI(opts.app, opts.swagger, SWAGGER_INFOS);
 }
 
 /**
@@ -1824,3 +1839,6 @@ function wrapHandlerForController(
         }
     };
 }
+
+
+export { Swagger, SwaggerPathDefinition } from './swagger';
