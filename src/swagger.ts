@@ -423,16 +423,21 @@ export function setupSwaggerUI(
         if (opts.document.tags) {
             newSwaggerDoc.tags = [];
 
-            for (const T in opts.document.tags) {
-                const TAG_NAME = T.trim();
-                const TAG_DESCRIPTION = toStringSafe(opts.document.tags[T])
+            // sort by tag name
+            Object.keys(opts.document.tags).sort((x, y) => {
+                return compareValuesBy(x, y, t => {
+                    return normalizeString(t);
+                });
+            }).forEach(t => {
+                const TAG_NAME = t.trim();
+                const TAG_DESCRIPTION = toStringSafe(opts.document.tags[t])
                     .trim();
 
                 newSwaggerDoc.tags.push({
                     name: TAG_NAME,
                     description: TAG_DESCRIPTION,
                 });
-            }
+            });
         }
     }
 
