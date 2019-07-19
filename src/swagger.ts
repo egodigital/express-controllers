@@ -463,14 +463,19 @@ export function setupSwaggerUI(
     if (opts.definitions) {
         newSwaggerDoc.definitions = {};
 
-        for (const DN of Object.keys(opts.definitions)) {
-            const DEF_NAME = DN.trim();
+        // sort by name
+        Object.keys(opts.definitions).sort((x, y) => {
+            return compareValuesBy(x, y, dn => {
+                return normalizeString(dn);
+            });
+        }).forEach(dn => {
+            const DEF_NAME = dn.trim();
             if ('' === DEF_NAME) {
-                continue;
+                return;
             }
 
-            newSwaggerDoc.definitions[DEF_NAME] = opts.definitions[DN];
-        }
+            newSwaggerDoc.definitions[DEF_NAME] = opts.definitions[dn];
+        });
     }
 
     if (newSwaggerDoc.paths) {
