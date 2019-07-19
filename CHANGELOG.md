@@ -1,7 +1,8 @@
 # Change Log (@egodigital/express-controllers)
 
-## 4.2.0
+## 4.2.1
 
+* fixes
 * improvements
 
 ## 4.1.5

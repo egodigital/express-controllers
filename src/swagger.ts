@@ -476,51 +476,66 @@ export function setupSwaggerUI(
     if (newSwaggerDoc.paths) {
         // path definitions
 
+        const PATH_ACTIONS: {
+            action: () => void,
+            swaggerPath: string;
+        }[] = [];
+
         infos.forEach(si => {
-            Object.keys(si.groupedRouterMethods).sort((x, y) => {
-                return compareValuesBy(x, y, routePath => {
-                    return normalizeString(routePath);  // keep sure to display paths in alphabetic order
-                });
-            }).forEach(routePath => {
+            Object.keys(si.groupedRouterMethods).forEach(routePath => {
                 const SWAGGER_PATH = toSwaggerPath(routePath);
 
-                if (_.isNil(newSwaggerDoc.paths[SWAGGER_PATH])) {
-                    newSwaggerDoc.paths[SWAGGER_PATH] = {};
-                }
+                PATH_ACTIONS.push({
+                    swaggerPath: SWAGGER_PATH,
+                    action: () => {
+                        if (_.isNil(newSwaggerDoc.paths[SWAGGER_PATH])) {
+                            newSwaggerDoc.paths[SWAGGER_PATH] = {};
+                        }
 
-                // set for each method
-                si.groupedRouterMethods[routePath].sort().forEach(m => {
-                    let pathDefinition = si.pathDefinition;
-                    let pathDefinitionUpdater: SwaggerPathDefinitionUpdater;
+                        // set for each method
+                        si.groupedRouterMethods[routePath].sort().forEach(m => {
+                            let pathDefinition = si.pathDefinition;
+                            let pathDefinitionUpdater: SwaggerPathDefinitionUpdater;
 
-                    if (si.options) {
-                        pathDefinitionUpdater = si.options.pathDefinitionUpdater;
-                    }
+                            if (si.options) {
+                                pathDefinitionUpdater = si.options.pathDefinitionUpdater;
+                            }
 
-                    if (_.isNil(pathDefinitionUpdater)) {
-                        pathDefinitionUpdater = getSwaggerPathDefinitionUpdater();  // global
-                    }
+                            if (_.isNil(pathDefinitionUpdater)) {
+                                pathDefinitionUpdater = getSwaggerPathDefinitionUpdater();  // global
+                            }
 
-                    if (pathDefinitionUpdater) {
-                        const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
-                            definition: pathDefinition,
-                            hasAuthorize: !_.isNil(si.controllerMethod[AUTHORIZER_OPTIONS]),
-                            method: m.toUpperCase(),
-                            path: routePath,
-                        };
+                            if (pathDefinitionUpdater) {
+                                const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
+                                    definition: pathDefinition,
+                                    hasAuthorize: !_.isNil(si.controllerMethod[AUTHORIZER_OPTIONS]),
+                                    method: m.toUpperCase(),
+                                    path: routePath,
+                                };
 
-                        pathDefinitionUpdater(
-                            UPDATER_CTX
-                        );
+                                pathDefinitionUpdater(
+                                    UPDATER_CTX
+                                );
 
-                        pathDefinition = UPDATER_CTX.definition;
-                    }
+                                pathDefinition = UPDATER_CTX.definition;
+                            }
 
-                    if (pathDefinition) {
-                        newSwaggerDoc.paths[SWAGGER_PATH][m] = pathDefinition;
-                    }
+                            if (pathDefinition) {
+                                newSwaggerDoc.paths[SWAGGER_PATH][m] = pathDefinition;
+                            }
+                        });
+                    },
                 });
             });
+        });
+
+        // sort by Swagger path
+        PATH_ACTIONS.sort((x, y) => {
+            return compareValuesBy(x, y, i => {
+                return normalizeString(i.swaggerPath);
+            });
+        }).forEach(pa => {
+            pa.action();
         });
     }
 
