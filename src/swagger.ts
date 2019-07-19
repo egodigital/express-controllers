@@ -21,7 +21,7 @@ import * as swaggerUi from 'swagger-ui-express';
 import * as yaml from 'js-yaml';
 import { AUTHORIZER_OPTIONS } from './authorize';
 import { DecoratorFunction, ExpressApp } from './index';
-import { asArray, isEmptyString, toBooleanSafe, toStringSafe } from './utils';
+import { asArray, compareValuesBy, isEmptyString, normalizeString, toBooleanSafe, toStringSafe } from './utils';
 
 /**
  * Possible value for an API url scheme.
@@ -476,51 +476,61 @@ export function setupSwaggerUI(
     if (newSwaggerDoc.paths) {
         // path definitions
 
-        for (const SI of infos) {
-            for (const ROUTE_PATH in SI.groupedRouterMethods) {
-                const SWAGGER_PATH = toSwaggerPath(ROUTE_PATH);
+        const PATH_ACTIONS: (() => void)[] = [];
 
-                if (_.isNil(newSwaggerDoc.paths[SWAGGER_PATH])) {
-                    newSwaggerDoc.paths[SWAGGER_PATH] = {};
-                }
+        infos.forEach(si => {
+            // keep sure to display paths in alphabetic order
+            Object.keys(si.groupedRouterMethods).sort((x, y) => {
+                return compareValuesBy(x, y, routePath => {
+                    return normalizeString(routePath);
+                });
+            }).forEach(routePath => {
+                const SWAGGER_PATH = toSwaggerPath(routePath);
 
-                const ALL_METHODS = SI.groupedRouterMethods[ROUTE_PATH]
-                    .sort();
-
-                // set for each method
-                for (const METHOD of ALL_METHODS) {
-                    let pathDefinition = SI.pathDefinition;
-                    let pathDefinitionUpdater: SwaggerPathDefinitionUpdater;
-
-                    if (SI.options) {
-                        pathDefinitionUpdater = SI.options.pathDefinitionUpdater;
+                PATH_ACTIONS.push(() => {
+                    if (_.isNil(newSwaggerDoc.paths[SWAGGER_PATH])) {
+                        newSwaggerDoc.paths[SWAGGER_PATH] = {};
                     }
 
-                    if (_.isNil(pathDefinitionUpdater)) {
-                        pathDefinitionUpdater = getSwaggerPathDefinitionUpdater();  // global
-                    }
+                    // set for each method
+                    si.groupedRouterMethods[routePath].sort().forEach(m => {
+                        let pathDefinition = si.pathDefinition;
+                        let pathDefinitionUpdater: SwaggerPathDefinitionUpdater;
 
-                    if (pathDefinitionUpdater) {
-                        const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
-                            definition: pathDefinition,
-                            hasAuthorize: !_.isNil(SI.controllerMethod[AUTHORIZER_OPTIONS]),
-                            method: METHOD.toUpperCase(),
-                            path: ROUTE_PATH,
-                        };
+                        if (si.options) {
+                            pathDefinitionUpdater = si.options.pathDefinitionUpdater;
+                        }
 
-                        pathDefinitionUpdater(
-                            UPDATER_CTX
-                        );
+                        if (_.isNil(pathDefinitionUpdater)) {
+                            pathDefinitionUpdater = getSwaggerPathDefinitionUpdater();  // global
+                        }
 
-                        pathDefinition = UPDATER_CTX.definition;
-                    }
+                        if (pathDefinitionUpdater) {
+                            const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
+                                definition: pathDefinition,
+                                hasAuthorize: !_.isNil(si.controllerMethod[AUTHORIZER_OPTIONS]),
+                                method: m.toUpperCase(),
+                                path: routePath,
+                            };
 
-                    if (pathDefinition) {
-                        newSwaggerDoc.paths[SWAGGER_PATH][METHOD] = pathDefinition;
-                    }
-                }
-            }
-        }
+                            pathDefinitionUpdater(
+                                UPDATER_CTX
+                            );
+
+                            pathDefinition = UPDATER_CTX.definition;
+                        }
+
+                        if (pathDefinition) {
+                            newSwaggerDoc.paths[SWAGGER_PATH][m] = pathDefinition;
+                        }
+                    });
+                });
+            });
+        });
+
+        PATH_ACTIONS.forEach(a => {
+            a();
+        });
     }
 
     const ROUTER = express.Router();
