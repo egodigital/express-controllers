@@ -1251,9 +1251,30 @@ function createRouteInitializerForMethod(
         }
     }
 
+    const UPDATE_SWAGGER_INFO = (p: RouterPath) => {
+        p = normalizeRoutePath(
+            toStringSafe(p)
+        );
+
+        const SI: SwaggerInfo = VALUE[SWAGGER_INFO];
+        if (!_.isNil(SI)) {
+            if (_.isNil(SI.groupedRouterMethods[p])) {
+                SI.groupedRouterMethods[p] = [];
+            }
+
+            if (SI.groupedRouterMethods[p].indexOf(method) < 0) {
+                SI.groupedRouterMethods[p].push(
+                    method
+                );
+            }
+        }
+    };
+
     createRouteInitializer(
         name, descriptor, opts,
         (controller, path, handler) => {
+            UPDATE_SWAGGER_INFO(path);
+
             controller.__router[method]
                 .apply(controller.__router,
                     [path as any]
@@ -1276,6 +1297,8 @@ function createRouteInitializerForMethod(
                 );
         },
         (controller, path, handlers) => {
+            UPDATE_SWAGGER_INFO(path);
+
             controller.__router[method]
                 .apply(controller.__router,
                     [path as any]

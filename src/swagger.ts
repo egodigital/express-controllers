@@ -201,6 +201,12 @@ export interface SwaggerInfo {
      */
     controllerMethod?: Function;
     /**
+     * List of router methods, grouped by paths.
+     */
+    groupedRouterMethods: {
+        [path: string]: string[],
+    };
+    /**
      * List of supported methods.
      */
     methods?: string[];
@@ -471,37 +477,42 @@ export function setupSwaggerUI(
         // path definitions
 
         for (const SI of infos) {
-            if (_.isNil(newSwaggerDoc.paths[SI.routePath])) {
-                newSwaggerDoc.paths[SI.routePath] = {};
-            }
-
-            // set for each method
-            for (const METHOD of SI.methods.sort()) {
-                let pathDefinition = SI.pathDefinition;
-                if (SI.options) {
-                    let pathDefinitionUpdater = SI.options.pathDefinitionUpdater;
-                    if (_.isNil(pathDefinitionUpdater)) {
-                        pathDefinitionUpdater = getSwaggerPathDefinitionUpdater();  // global
-                    }
-
-                    if (pathDefinitionUpdater) {
-                        const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
-                            definition: pathDefinition,
-                            hasAuthorize: !_.isNil(SI.controllerMethod[AUTHORIZER_OPTIONS]),
-                            method: METHOD.toUpperCase(),
-                            path: SI.routePath,
-                        };
-
-                        pathDefinitionUpdater(
-                            UPDATER_CTX
-                        );
-
-                        pathDefinition = UPDATER_CTX.definition;
-                    }
+            for (const ROUTE_PATH in SI.groupedRouterMethods) {
+                if (_.isNil(newSwaggerDoc.paths[ROUTE_PATH])) {
+                    newSwaggerDoc.paths[ROUTE_PATH] = {};
                 }
 
-                if (pathDefinition) {
-                    newSwaggerDoc.paths[SI.routePath][METHOD] = pathDefinition;
+                const ALL_METHODS = SI.groupedRouterMethods[ROUTE_PATH]
+                    .sort();
+
+                // set for each method
+                for (const METHOD of ALL_METHODS) {
+                    let pathDefinition = SI.pathDefinition;
+                    if (SI.options) {
+                        let pathDefinitionUpdater = SI.options.pathDefinitionUpdater;
+                        if (_.isNil(pathDefinitionUpdater)) {
+                            pathDefinitionUpdater = getSwaggerPathDefinitionUpdater();  // global
+                        }
+
+                        if (pathDefinitionUpdater) {
+                            const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
+                                definition: pathDefinition,
+                                hasAuthorize: !_.isNil(SI.controllerMethod[AUTHORIZER_OPTIONS]),
+                                method: METHOD.toUpperCase(),
+                                path: ROUTE_PATH,
+                            };
+
+                            pathDefinitionUpdater(
+                                UPDATER_CTX
+                            );
+
+                            pathDefinition = UPDATER_CTX.definition;
+                        }
+                    }
+
+                    if (pathDefinition) {
+                        newSwaggerDoc.paths[ROUTE_PATH][METHOD] = pathDefinition;
+                    }
                 }
             }
         }
@@ -567,6 +578,7 @@ export function setupSwaggerUI(
 
 function toSwaggerInfo(args: any[]): SwaggerInfo {
     const INFO: SwaggerInfo = {
+        groupedRouterMethods: {},
         pathDefinition: undefined,
     };
 
