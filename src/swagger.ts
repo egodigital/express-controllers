@@ -201,6 +201,10 @@ export interface SwaggerInfo {
      */
     controllerMethod?: Function;
     /**
+     * The controller's root path.
+     */
+    controllerRootPath?: string;
+    /**
      * List of router methods, grouped by paths.
      */
     groupedRouterMethods: {
@@ -218,10 +222,6 @@ export interface SwaggerInfo {
      * The path definition.
      */
     pathDefinition: SwaggerPathDefinition;
-    /**
-     * The route(r) path.
-     */
-    routePath?: string;
 }
 
 /**

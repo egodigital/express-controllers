@@ -1088,7 +1088,7 @@ export function initControllers(opts: InitControllersOptions): void {
                 if (!_.isNil(SWAGGER)) {
                     SWAGGER.controllerMethod = CONTROLLER[MN];
                     SWAGGER.methods = asArray<string>(CONTROLLER[MN][METHOD_LIST]);
-                    SWAGGER.routePath = ROOT_PATH;
+                    SWAGGER.controllerRootPath = ROOT_PATH;
 
                     SWAGGER_INFOS.push(SWAGGER);
                 }
@@ -1252,12 +1252,14 @@ function createRouteInitializerForMethod(
     }
 
     const UPDATE_SWAGGER_INFO = (p: RouterPath) => {
-        p = normalizeRoutePath(
-            toStringSafe(p)
-        );
-
         const SI: SwaggerInfo = VALUE[SWAGGER_INFO];
         if (!_.isNil(SI)) {
+            p = normalizeRoutePath(
+                path.join(
+                    SI.controllerRootPath, toStringSafe(p)
+                )
+            );
+
             if (_.isNil(SI.groupedRouterMethods[p])) {
                 SI.groupedRouterMethods[p] = [];
             }
