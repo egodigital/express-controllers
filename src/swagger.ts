@@ -581,10 +581,6 @@ export function setupSwaggerUI(
 }
 
 
-function toSwaggerPath(p: string) {
-    return p;  // TODO
-}
-
 function toSwaggerInfo(args: any[]): SwaggerInfo {
     const INFO: SwaggerInfo = {
         groupedRouterMethods: {},
@@ -622,4 +618,13 @@ function toSwaggerInfo(args: any[]): SwaggerInfo {
     }
 
     return INFO;
+}
+
+function toSwaggerPath(p: string) {
+    p = p.replace(
+        /(\:)([^\/|^\(|^\)]+)([\/|\(|\)]?)/ig,
+        '{$2}$3'
+    );
+
+    return p;
 }
