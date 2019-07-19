@@ -19,6 +19,7 @@ import * as _ from 'lodash';
 import * as express from 'express';
 import * as swaggerUi from 'swagger-ui-express';
 import * as yaml from 'js-yaml';
+import { AUTHORIZER_OPTIONS } from './authorize';
 import { DecoratorFunction, ExpressApp } from './index';
 import { asArray, isEmptyString, toBooleanSafe, toStringSafe } from './utils';
 
@@ -196,6 +197,10 @@ export interface SwaggerExternalDocs {
  */
 export interface SwaggerInfo {
     /**
+     * The underlying controller method.
+     */
+    controllerMethod?: Function;
+    /**
      * List of supported methods.
      */
     methods?: string[];
@@ -244,6 +249,10 @@ export interface SwaggerPathDefinitionUpdaterContext {
      * The path definition to update.
      */
     definition: SwaggerPathDefinition;
+    /**
+     * Indicates if underlying method is marked with 'Authorize()' decorator or not.
+     */
+    hasAuthorize: boolean;
     /**
      * The HTTP method.
      */
@@ -476,6 +485,7 @@ export function setupSwaggerUI(
                     if (pathDefinitionUpdater) {
                         const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
                             definition: pathDefinition,
+                            hasAuthorize: !_.isNil(SI.controllerMethod[AUTHORIZER_OPTIONS]),
                             method: METHOD.toUpperCase(),
                             path: SI.routePath,
                         };

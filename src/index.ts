@@ -1086,6 +1086,7 @@ export function initControllers(opts: InitControllersOptions): void {
                 const SWAGGER: SwaggerInfo = CONTROLLER[MN][SWAGGER_INFO];
 
                 if (!_.isNil(SWAGGER)) {
+                    SWAGGER.controllerMethod = CONTROLLER[MN];
                     SWAGGER.methods = asArray<string>(CONTROLLER[MN][METHOD_LIST]);
                     SWAGGER.routePath = ROOT_PATH;
 

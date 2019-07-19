@@ -123,7 +123,10 @@ export interface AuthorizeOptions {
 }
 
 
-const AUTHORIZER_OPTIONS = Symbol('AUTHORIZER_OPTIONS');
+/**
+ * Key for storing Authorize() options.
+ */
+export const AUTHORIZER_OPTIONS = Symbol('AUTHORIZER_OPTIONS');
 let authorizationHandler: AuthorizeHandler;
 let authorizationFailedHandler: AuthorizeFailedHandler;
 

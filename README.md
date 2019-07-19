@@ -357,7 +357,7 @@ export class Controller extends ControllerBase {
 
 ### Swagger
 
-First define the main information of the document:
+First, define the main information of the document:
 
 ```typescript
 import * as express from 'express';
@@ -467,7 +467,7 @@ function pathDefinitionUpdater(ctx: SwaggerPathDefinitionUpdaterContext) {
 
     // Internal Server Error
     ctx.definition['responses']['500'] = {
-        "description": "Operation was failed!"
+        "description": "Operation has failed!"
     };
 }
 ```
