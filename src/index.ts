@@ -959,7 +959,7 @@ export function initControllers(opts: InitControllersOptions): void {
         }
 
         const COMP_1 = compareValuesBy(x, y, (f) => {
-            switch (path.basename(f)) {
+            switch (path.basename(f, path.extname(f))) {
                 case 'index':
                     return Number.MIN_SAFE_INTEGER;  // 'index' file is always first
             }
