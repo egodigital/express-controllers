@@ -471,7 +471,9 @@ export function setupSwaggerUI(
         // path definitions
 
         for (const SI of infos) {
-            newSwaggerDoc.paths[SI.routePath] = {};
+            if (_.isNil(newSwaggerDoc.paths[SI.routePath])) {
+                newSwaggerDoc.paths[SI.routePath] = {};
+            }
 
             // set for each method
             for (const METHOD of SI.methods.sort()) {
