@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 4.5.0
+
+* can define optional `__updateSwaggerPath` method in [controller](https://egodigital.github.io/express-controllers/interfaces/_index_.controller.html) now
+
 ## 4.4.2
 
 * improvements

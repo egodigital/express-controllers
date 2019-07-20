@@ -21,7 +21,7 @@ import * as fastGlob from 'fast-glob';
 import * as joi from 'joi';
 import * as path from 'path';
 import { AuthorizeHandler, AuthorizeFailedHandler, createRouteAuthorizer } from './authorize';
-import { setupSwaggerUI, SwaggerInfo, SWAGGER_INFO, InitControllersSwaggerOptionsValue } from './swagger';
+import { InitControllersSwaggerOptionsValue, setupSwaggerUI, SwaggerInfo, SwaggerPathDefinitionUpdater, SWAGGER_INFO } from './swagger';
 import { asArray, compareValuesBy, isEmptyString, isJoi, normalizeString, toBooleanSafe, toStringSafe } from './utils';
 
 
@@ -72,6 +72,10 @@ export interface Controller<TApp extends any = ExpressApp> {
      * An optional, custom handler for serializing the response.
      */
     __serialize?: ResponseSerializer;
+    /**
+     * Controller wide method to update a Swagger path definition.
+     */
+    __updateSwaggerPath?: SwaggerPathDefinitionUpdater;
     /**
      * One or more optional request handlers, wich are used as prefixed
      * middleware(s).
@@ -1082,10 +1086,12 @@ export function initControllers(opts: InitControllersOptions): void {
             });
 
             // execute 'INITIALIZE_ROUTE' functions
+            // and setup swagger
             for (const MN of METHOD_NAMES) {
                 const SWAGGER: SwaggerInfo = CONTROLLER[MN][SWAGGER_INFO];
 
                 if (!_.isNil(SWAGGER)) {
+                    SWAGGER.controller = CONTROLLER;
                     SWAGGER.controllerMethod = CONTROLLER[MN];
                     SWAGGER.methods = asArray<string>(CONTROLLER[MN][METHOD_LIST]);
                     SWAGGER.controllerRootPath = ROOT_PATH;

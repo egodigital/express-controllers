@@ -20,7 +20,7 @@ import * as express from 'express';
 import * as swaggerUi from 'swagger-ui-express';
 import * as yaml from 'js-yaml';
 import { AUTHORIZER_OPTIONS } from './authorize';
-import { DecoratorFunction, ExpressApp } from './index';
+import { Controller, DecoratorFunction, ExpressApp } from './index';
 import { asArray, compareValuesBy, isEmptyString, normalizeString, toBooleanSafe, toStringSafe } from './utils';
 
 /**
@@ -196,6 +196,10 @@ export interface SwaggerExternalDocs {
  * Information for generating a Swagger document (path definition).
  */
 export interface SwaggerInfo {
+    /**
+     * The underlying controller.
+     */
+    controller?: Controller<unknown>;
     /**
      * The underlying controller method.
      */
@@ -511,6 +515,9 @@ export function setupSwaggerUI(
                                 pathDefinitionUpdater = si.options.pathDefinitionUpdater;
                             }
 
+                            if (_.isNil(pathDefinitionUpdater)) {
+                                pathDefinitionUpdater = si.controller.__updateSwaggerPath;  // controller-wide
+                            }
                             if (_.isNil(pathDefinitionUpdater)) {
                                 pathDefinitionUpdater = getSwaggerPathDefinitionUpdater();  // global
                             }
