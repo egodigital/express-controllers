@@ -558,7 +558,7 @@ export function setupSwaggerUI(
             // additional middlewares
 
             ROUTER.use.apply(
-                this, MIDDLEWARES
+                ROUTER, MIDDLEWARES
             );
         }
 
