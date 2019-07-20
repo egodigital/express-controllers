@@ -408,7 +408,8 @@ app.listen(8080, () => {
 });
 ```
 
-Now use `@Swagger` decorator for each of your method, to document your API:
+Now use `@Swagger` decorator for each of your method, to document your API (for more information, visit [Paths and Operations
+](https://swagger.io/docs/specification/2-0/paths-and-operations/)):
 
 ```typescript
 import { Request, Response } from 'express';
@@ -424,6 +425,7 @@ export class Controller extends ControllerBase {
      * [GET]  /api
      */
     @GET()
+    // s. https://swagger.io/docs/specification/2-0/paths-and-operations/
     @Swagger({
         "tags": [
             "test"
