@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 4.6.0
+
+* added `SwaggerPathDefinitionUpdaterContext` to [SwaggerPathDefinitionUpdaterContext](https://egodigital.github.io/express-controllers/interfaces/_swagger_.swaggerpathdefinitionupdatercontext.html) interface
+
 ## 4.5.1
 
 * can define optional `__updateSwaggerPath` method in [controller](https://egodigital.github.io/express-controllers/interfaces/_index_.controller.html) now

@@ -20,7 +20,7 @@ import * as express from 'express';
 import * as swaggerUi from 'swagger-ui-express';
 import * as yaml from 'js-yaml';
 import { AUTHORIZER_OPTIONS } from './authorize';
-import { Controller, DecoratorFunction, ExpressApp } from './index';
+import { Controller, DecoratorFunction, REQUEST_VALIDATORS, ExpressApp } from './index';
 import { asArray, compareValuesBy, isEmptyString, normalizeString, toBooleanSafe, toStringSafe } from './utils';
 
 /**
@@ -259,6 +259,10 @@ export interface SwaggerPathDefinitionUpdaterContext {
      * The path definition to update.
      */
     definition: SwaggerPathDefinition;
+    /**
+     * Indicates if endpoint does validate or not.
+     */
+    doesValidate: boolean;
     /**
      * Indicates if underlying method is marked with 'Authorize()' decorator or not.
      */
@@ -525,6 +529,7 @@ export function setupSwaggerUI(
                             if (pathDefinitionUpdater) {
                                 const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
                                     definition: pathDefinition,
+                                    doesValidate: !!asArray(si.controllerMethod[REQUEST_VALIDATORS]).length,
                                     hasAuthorize: !_.isNil(si.controllerMethod[AUTHORIZER_OPTIONS]),
                                     method: m.toUpperCase(),
                                     path: routePath,

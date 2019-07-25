@@ -349,7 +349,10 @@ let objValidateFailedHandler: ObjectValidationFailedHandler;
 const METHOD_LIST = Symbol('METHOD_LIST');
 let reqErrorHandler: RequestErrorHandler;
 const REQUEST_ERROR_HANDLER = Symbol('REQUEST_ERROR_HANDLER');
-const REQUEST_VALIDATORS = Symbol('REQUEST_VALIDATORS');
+/**
+ * Index / key for request validators.
+ */
+export const REQUEST_VALIDATORS = Symbol('REQUEST_VALIDATORS');
 const RESPONSE_SERIALIZER = Symbol('RESPONSE_SERIALIZER');
 
 
