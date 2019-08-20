@@ -354,6 +354,7 @@ const REQUEST_ERROR_HANDLER = Symbol('REQUEST_ERROR_HANDLER');
  */
 export const REQUEST_VALIDATORS = Symbol('REQUEST_VALIDATORS');
 const RESPONSE_SERIALIZER = Symbol('RESPONSE_SERIALIZER');
+let resSerializer: ResponseSerializer;
 
 
 /**
@@ -872,12 +873,22 @@ export function getRequestErrorHandler(): RequestErrorHandler {
         // default
 
         handler = (ctx) => {
-            return ctx.response.status(500)
+            return ctx.response
+                .status(500)
                 .send();
         };
     }
 
     return handler;
+}
+
+/**
+ * Returns the global response serializer.
+ *
+ * @return {ResponseSerializer|null|undefined} The serializer, if defined.
+ */
+export function getResponseSerializer(): ResponseSerializer | null | undefined {
+    return resSerializer;
 }
 
 /**
@@ -1132,6 +1143,17 @@ export function setRequestErrorHandler(
     newHandler: RequestErrorHandler | undefined | null
 ): void {
     reqErrorHandler = newHandler;
+}
+
+/**
+ * Sets a global response serializer.
+ *
+ * @param {ResponseSerializer|undefined|null} newSerializer The new serializer.
+ */
+export function setResponseSerializer(
+    newSerializer: ResponseSerializer | undefined | null
+) {
+    resSerializer = newSerializer;
 }
 
 
@@ -1458,7 +1480,7 @@ function objectValidate(
                 }
             }
 
-            return await Promise.resolve(
+            return Promise.resolve(
                 failedHandler({
                     body: BODY,
                     details: details,
@@ -1577,10 +1599,12 @@ function wrapHandlerForController(
             let result: any;
 
             if (useSerializer) {
-                let serializer: ResponseSerializer = handler[RESPONSE_SERIALIZER];
+                let serializer: ResponseSerializer = handler[RESPONSE_SERIALIZER];  // custom serializer by request
                 if (_.isNil(serializer)) {
-                    // default of controller
-                    serializer = controller.__serialize;
+                    serializer = controller.__serialize;  // default of controller
+                }
+                if (_.isNil(serializer)) {
+                    serializer = getResponseSerializer();  // global default
                 }
 
                 if (_.isNil(serializer)) {
@@ -1607,12 +1631,10 @@ function wrapHandlerForController(
         } catch (e) {
             let errorHandler: RequestErrorHandler = handler[REQUEST_ERROR_HANDLER];  // custom handler by request
             if (_.isNil(errorHandler)) {
-                // default of controller
-                errorHandler = controller.__error;
+                errorHandler = controller.__error;  // default of controller
             }
             if (_.isNil(errorHandler)) {
-                // (global) default
-                errorHandler = getRequestErrorHandler();
+                errorHandler = getRequestErrorHandler();  // (global) default
             }
 
             const CTX: RequestErrorHandlerContext = {
@@ -1621,7 +1643,7 @@ function wrapHandlerForController(
                 response: res,
             };
 
-            return await Promise.resolve(
+            return Promise.resolve(
                 errorHandler.apply(controller, [
                     CTX
                 ])

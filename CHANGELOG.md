@@ -1,5 +1,10 @@
 # Change Log (@egodigital/express-controllers)
 
+## 4.7.0
+
+* can define [response serializer](https://egodigital.github.io/express-controllers/modules/_index_.html#responseserializer) as global default via `setResponseSerializer()` function now
+* code cleanups and improvements
+
 ## 4.6.0
 
 * added `SwaggerPathDefinitionUpdaterContext` to [SwaggerPathDefinitionUpdaterContext](https://egodigital.github.io/express-controllers/interfaces/_swagger_.swaggerpathdefinitionupdatercontext.html) interface
