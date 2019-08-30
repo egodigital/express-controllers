@@ -1010,7 +1010,7 @@ export function initControllers(opts: InitControllersOptions): void {
             )
         );
 
-        const ROOT_PATH = normalizeRoutePath(
+        const FILE_ROOT_PATH = normalizeRoutePath(
             path.relative(
                 cwd,
                 path.dirname(F) + '/' + ('index' === CONTROLLER_MODULE_FILE ? '' : CONTROLLER_MODULE_FILE),
@@ -1019,11 +1019,14 @@ export function initControllers(opts: InitControllersOptions): void {
 
         // custom class name
         let controllerClassName = controllerClassNameProvider(
-            ROOT_PATH, F,
+            FILE_ROOT_PATH, F,
         );
 
         const CONTROLLER_CLASS = CONTROLLER_MODULE[controllerClassName];
         if (CONTROLLER_CLASS) {
+            const ROOT_PATH = FILE_ROOT_PATH.split('/@')
+                .join('/:');
+
             if (_.isNil(ROUTERS[ROOT_PATH])) {
                 ROUTERS[ROOT_PATH] = express.Router();
 
@@ -1209,10 +1212,6 @@ function createRouteInitializer(
     if (_.isString(routerPath)) {
         // normalize
         routerPath = normalizeRoutePath(routerPath);
-
-        // route parameters
-        routerPath = routerPath.split('/@')
-            .join('/:');
     }
 
     if (!_.isNil(prepare)) {

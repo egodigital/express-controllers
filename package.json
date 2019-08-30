@@ -1,6 +1,6 @@
 {
     "name": "@egodigital/express-controllers",
-    "version": "5.0.0",
+    "version": "5.0.1",
     "description": "Sets up controllers for Express framework.",
     "author": "e.GO Digital GmbH, Aachen, Germany",
     "license": "LGPL-3.0",
