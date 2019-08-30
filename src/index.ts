@@ -1028,7 +1028,9 @@ export function initControllers(opts: InitControllersOptions): void {
                 .join('/:');
 
             if (_.isNil(ROUTERS[ROOT_PATH])) {
-                ROUTERS[ROOT_PATH] = express.Router();
+                ROUTERS[ROOT_PATH] = express.Router({
+                    mergeParams: true,
+                });
 
                 opts.app
                     .use(ROOT_PATH, ROUTERS[ROOT_PATH]);

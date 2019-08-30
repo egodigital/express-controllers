@@ -1,6 +1,6 @@
 # Change Log (@egodigital/express-controllers)
 
-## 5.0.1
+## 5.0.2
 
 * `@` character prefixes in directory paths, will be interpreted as `:` route parameters prefixes now
 * bug fixes
