@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 5.0.0
+
+* `@` character prefixes in directory paths, will be interpreted as `:` route parameters prefixes now
+
 ## 4.7.0
 
 * can define [response serializer](https://egodigital.github.io/express-controllers/modules/_index_.html#responseserializer) as global default via `setResponseSerializer()` function now

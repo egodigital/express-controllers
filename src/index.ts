@@ -1209,6 +1209,10 @@ function createRouteInitializer(
     if (_.isString(routerPath)) {
         // normalize
         routerPath = normalizeRoutePath(routerPath);
+
+        // route parameters
+        routerPath = routerPath.split('/@')
+            .join('/:');
     }
 
     if (!_.isNil(prepare)) {
