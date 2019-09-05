@@ -1,7 +1,8 @@
 # Change Log (@egodigital/express-controllers)
 
-## 5.1.0
+## 5.1.1
 
+* added `limit` property to [ControllerRouteWithBodyOptions](https://egodigital.github.io/express-controllers/interfaces/_index_.controllerroutewithbodyoptions.html) interface
 * added `limit` property to [ObjectValidatorOptions](https://egodigital.github.io/express-controllers/interfaces/_index_.objectvalidatoroptions.html) interface
 
 ## 5.0.2

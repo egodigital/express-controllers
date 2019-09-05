@@ -143,6 +143,10 @@ export interface ControllerRouteWithBodyOptions extends ControllerRouteOptions {
      */
     format?: BodyFormat;
     /**
+     * The upload limit, in bytes.
+     */
+    limit?: number;
+    /**
      * A custom function, that handles a failed schema validation.
      */
     onValidationFailed?: ObjectValidationFailedHandler;
@@ -1372,6 +1376,7 @@ function createRouteInitializerForMethod(
                         inputHandlers = jsonValidate(
                             {
                                 failedHandler: (opts as ControllerRouteWithBodyOptions).onValidationFailed,
+                                limit: (opts as ControllerRouteWithBodyOptions).limit,
                                 schema: SCHEMA,
                             },
                             req => method !== normalizeString(req.method),
@@ -1383,6 +1388,7 @@ function createRouteInitializerForMethod(
                         inputHandlers = formValidate(
                             {
                                 failedHandler: (opts as ControllerRouteWithBodyOptions).onValidationFailed,
+                                limit: (opts as ControllerRouteWithBodyOptions).limit,
                                 schema: SCHEMA,
                             },
                             req => method !== normalizeString(req.method),
