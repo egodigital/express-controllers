@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 5.1.0
+
+* added `limit` property to [ObjectValidatorOptions](https://egodigital.github.io/express-controllers/interfaces/_index_.objectvalidatoroptions.html) interface
+
 ## 5.0.2
 
 * `@` character prefixes in directory paths, will be interpreted as `:` route parameters prefixes now

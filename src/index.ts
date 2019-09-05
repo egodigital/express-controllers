@@ -247,6 +247,10 @@ export interface ObjectValidatorOptions {
      */
     failedHandler?: ObjectValidationFailedHandler;
     /**
+     * A custom upload limit, in bytes.
+     */
+    limit?: number;
+    /**
      * The schema.
      */
     schema?: joi.AnySchema;
@@ -1404,27 +1408,50 @@ function formValidate(
     optsOrSchema: ObjectValidatorOptionsValue,
     skipIf?: (req: express.Request) => boolean,
 ): express.RequestHandler[] {
+    const OPTS = toObjectValidatorOptions(optsOrSchema);
+    const LIMIT = getObjectValidationUploadLimit(OPTS);
+
     return objectValidate(
-        express.urlencoded({ extended: true, }),
-        optsOrSchema,
+        express.urlencoded({
+            extended: true,
+            limit: LIMIT,
+        }),
+        OPTS,
         skipIf,
     );
+}
+
+function getObjectValidationUploadLimit(opts: ObjectValidatorOptions): number {
+    let limit = parseInt(
+        toStringSafe(opts.limit)
+            .trim()
+    );
+    if (isNaN(limit)) {
+        limit = undefined;
+    }
+
+    return limit;
 }
 
 function jsonValidate(
     optsOrSchema: ObjectValidatorOptionsValue,
     skipIf?: (req: express.Request) => boolean,
 ): express.RequestHandler[] {
+    const OPTS = toObjectValidatorOptions(optsOrSchema);
+    const LIMIT = getObjectValidationUploadLimit(OPTS);
+
     return objectValidate(
-        express.json(),
-        optsOrSchema,
+        express.json({
+            limit: LIMIT,
+        }),
+        OPTS,
         skipIf,
     );
 }
 
 function objectValidate(
     middlewares: express.RequestHandler | express.RequestHandler[],
-    optsOrSchema: ObjectValidatorOptionsValue,
+    opts: ObjectValidatorOptions,
     skipIf?: (req: express.Request) => boolean,
 ): express.RequestHandler[] {
     if (_.isNil(skipIf)) {
@@ -1435,19 +1462,6 @@ function objectValidate(
         async (req: express.Request, res: express.Response, next: express.NextFunction) => {
             if (skipIf(req)) {
                 return next();
-            }
-
-            let opts: ObjectValidatorOptions;
-            if (_.isNil(optsOrSchema)) {
-                opts = {} as any;
-            } else {
-                if (isJoi(optsOrSchema)) {
-                    opts = {
-                        schema: optsOrSchema,
-                    };
-                } else {
-                    opts = optsOrSchema as ObjectValidatorOptions;
-                }
             }
 
             let failedHandler = opts.failedHandler;
@@ -1585,6 +1599,23 @@ function toControllerRouteWithBodyOptions(args: any[]): ControllerRouteWithBodyO
             };
 
             UPDATE_OPTS_BY_SCHEMA_ARGS(args[2], args[3]);
+        }
+    }
+
+    return opts;
+}
+
+function toObjectValidatorOptions(optsOrSchema: ObjectValidatorOptionsValue): ObjectValidatorOptions {
+    let opts: ObjectValidatorOptions;
+    if (_.isNil(optsOrSchema)) {
+        opts = {} as any;
+    } else {
+        if (isJoi(optsOrSchema)) {
+            opts = {
+                schema: optsOrSchema,
+            };
+        } else {
+            opts = optsOrSchema as ObjectValidatorOptions;
         }
     }
 
