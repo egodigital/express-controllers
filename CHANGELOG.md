@@ -1,5 +1,10 @@
 # Change Log (@egodigital/express-controllers)
 
+## 5.2.0
+
+* added `serializeForJSON()` function
+* added `events` with `onControllerCreated` to [InitControllersOptions](https://egodigital.github.io/express-controllers/interfaces/_index_.initcontrollersoptions.html) interface
+
 ## 5.1.1
 
 * added `limit` property to [ControllerRouteWithBodyOptions](https://egodigital.github.io/express-controllers/interfaces/_index_.controllerroutewithbodyoptions.html) interface

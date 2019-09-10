@@ -100,6 +100,54 @@ export function normalizeString(val: any): string {
 }
 
 /**
+ * Reads all data from a readable stream.
+ *
+ * @param {NodeJS.ReadStream} stream The stream to read.
+ *
+ * @return Promise<Buffer> The promise with the read data.
+ */
+export function readAll(stream: NodeJS.ReadStream): Promise<Buffer> {
+    return new Promise<Buffer>((resolve, reject) => {
+        let data: Buffer = Buffer.alloc(0);
+        let completedInvoked = false;
+        const COMPLETED = (err?: any) => {
+            if (completedInvoked) {
+                return;
+            }
+            completedInvoked = true;
+
+            if (err) {
+                reject(err);
+            } else {
+                resolve(data);
+            }
+        };
+
+        try {
+            stream.once("error", (err) => {
+                COMPLETED(err);
+            });
+
+            stream.on("data", (chunk: Buffer) => {
+                try {
+                    if (data.length > 0) {
+                        data = Buffer.concat([data, chunk]);
+                    }
+                } catch (e) {
+                    COMPLETED(e);
+                }
+            });
+
+            stream.once("end", () => {
+                COMPLETED();
+            });
+        } catch (e) {
+            COMPLETED(e);
+        }
+    });
+}
+
+/**
  * Converts a value to a boolean, if needed.
  *
  * @param {any} val The input value.

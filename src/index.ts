@@ -113,6 +113,26 @@ export type ControllerClassConstructorArgsProvider =
     ) => ArrayLike<any>;
 
 /**
+ * Arguments for a 'controller create' event handler.
+ */
+export interface ControllerCreatedEventArguments<TApp extends any = ExpressApp> {
+    /**
+     * The created instance.
+     */
+    controller: Controller<TApp>;
+    /**
+     * The file.
+     */
+    file: string;
+}
+
+/**
+ * A handler, that is invoked, after a controller instance has been created.
+ */
+export type ControllerCreatedEventHandler<TApp extends any = ExpressApp> =
+    (args: ControllerCreatedEventArguments<TApp>) => any;
+
+/**
  * Options for a controller route.
  */
 export interface ControllerRouteOptions {
@@ -173,7 +193,7 @@ export type ExpressApp = express.Express | express.Router;
 /**
  * Options for 'initControllers()' function.
  */
-export interface InitControllersOptions {
+export interface InitControllersOptions<TApp extends any = ExpressApp> {
     /**
      * The underlying Express host or router.
      */
@@ -190,6 +210,15 @@ export interface InitControllersOptions {
      * The custom current work directory. Default: '{PROCESS}/controllers'
      */
     cwd?: string;
+    /**
+     * Events.
+     */
+    events?: {
+        /**
+         * Event, that is invoked, after a controller instance has been created.
+         */
+        onControllerCreated?: ControllerCreatedEventHandler<TApp>;
+    };
     /**
      * One or more custom glob patterns of files to scan. Default: [ *.js, *.ts ]
      */
@@ -1075,6 +1104,15 @@ export function initControllers(opts: InitControllersOptions): void {
                 ))
             );
 
+            if (opts.events) {
+                if (opts.events.onControllerCreated) {
+                    opts.events.onControllerCreated({
+                        controller: CONTROLLER,
+                        file: F,
+                    });
+                }
+            }
+
             const ROUTER_MIDDLEWARES = asArray(CONTROLLER.__use)
                 .map(rmw => wrapHandlerForController(CONTROLLER, rmw, false));
             if (ROUTER_MIDDLEWARES.length) {
@@ -1697,3 +1735,4 @@ function wrapHandlerForController(
 
 export * from './authorize';
 export * from './swagger';
+export * from './tools';
