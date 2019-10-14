@@ -1,5 +1,10 @@
 # Change Log (@egodigital/express-controllers)
 
+## 5.3.0
+
+* added `security` property to [InitControllersSwaggerDocumentOptions](https://egodigital.github.io/express-controllers/interfaces/_swagger_.initcontrollersswaggerdocumentoptions.html) interface
+* updated to `swagger-ui-express@^4.1.2`
+
 ## 5.2.0
 
 * added `serializeForJSON()` function

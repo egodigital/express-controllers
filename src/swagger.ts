@@ -53,6 +53,10 @@ export interface InitControllersSwaggerDocumentOptions {
      */
     schemes?: ApiUrlScheme | ApiUrlScheme[];
     /**
+     * Global security definitions.
+     */
+    security?: SwaggerSecurityDefintion[];
+    /**
      * Security definitions.
      */
     securityDefinitions?: SwaggerDefinitionList;
@@ -277,6 +281,10 @@ export interface SwaggerPathDefinitionUpdaterContext {
     path: string;
 }
 
+/**
+ * A security defintion.
+ */
+export type SwaggerSecurityDefintion = { [name: string]: any[] };
 
 /**
  * Key for storing a SwaggerInfo document.
