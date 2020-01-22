@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 5.4.0
+
+* updated to `swagger-ui-express@^4.1.3`
+
 ## 5.3.0
 
 * added `security` property to [InitControllersSwaggerDocumentOptions](https://egodigital.github.io/express-controllers/interfaces/_swagger_.initcontrollersswaggerdocumentoptions.html) interface
