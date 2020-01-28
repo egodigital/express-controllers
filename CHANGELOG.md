@@ -1,5 +1,10 @@
 # Change Log (@egodigital/express-controllers)
 
+## 6.0.0
+
+* changed default value of [files property](https://egodigital.github.io/express-controllers/interfaces/_index_.initcontrollersoptions.html#files) 
+* updated to `fast-glob@^3.1.1`
+
 ## 5.4.0
 
 * updated to `swagger-ui-express@^4.1.3`

@@ -133,6 +133,56 @@ export type ControllerCreatedEventHandler<TApp extends any = ExpressApp> =
     (args: ControllerCreatedEventArguments<TApp>) => any;
 
 /**
+ * Arguments for a 'ControllerFileLoadedEventHandler' instance.
+ */
+export interface ControllerFileLoadedEventArguments {
+    /**
+     * The error (if occurred).
+     */
+    error?: any;
+    /**
+     * The full path of the underlying file.
+     */
+    file: string;
+}
+
+/**
+ * Event handler, that is invoked, AFTER loading a file has been finished.
+ *
+ * @param {ControllerFileLoadedEventArguments} args The arguments.
+ */
+export type ControllerFileLoadedEventHandler =
+    (args: ControllerFileLoadedEventArguments) => void;
+
+/**
+ * Arguments for a 'ControllerFileLoadingEventHandler' instance.
+ */
+export interface ControllerFileLoadingEventArguments {
+    /**
+     * The full path of the underlying file.
+     */
+    file: string;
+}
+
+/**
+ * Event handler, that is invoked, BEFORE loading a file is going to start.
+ *
+ * @param {ControllerFileLoadingEventArguments} args The arguments.
+ */
+export type ControllerFileLoadingEventHandler =
+    (args: ControllerFileLoadingEventArguments) => void;
+
+/**
+ * A preficate, which checks, if a controller (module) file
+ * should be included or not.
+ *
+ * @param {string} file The full path of the file to check.
+ *
+ * @return {boolean} Handle file or not.
+ */
+export type ControllerFilePredicate = (file: string) => boolean;
+
+/**
  * Options for a controller route.
  */
 export interface ControllerRouteOptions {
@@ -218,9 +268,21 @@ export interface InitControllersOptions<TApp extends any = ExpressApp> {
          * Event, that is invoked, after a controller instance has been created.
          */
         onControllerCreated?: ControllerCreatedEventHandler<TApp>;
+        /**
+         * Is invoked AFTER a controller file loading operation has been finished.
+         */
+        onFileLoaded?: ControllerFileLoadedEventHandler;
+        /**
+         * Is invoked BEFORE a controller file loading operation is going to be started.
+         */
+        onFileLoading?: ControllerFileLoadingEventHandler;
     };
     /**
-     * One or more custom glob patterns of files to scan. Default: [ *.js, *.ts ]
+     * Filter function for scanned files (s. 'files').
+     */
+    fileFilter?: ControllerFilePredicate;
+    /**
+     * One or more custom glob patterns of files to scan. Default: [ *.js ] or [ *.ts ]
      */
     files?: string | string[];
     /**
@@ -934,6 +996,8 @@ export function getResponseSerializer(): ResponseSerializer | null | undefined {
  * @param {InitControllersOptions} opts The options.
  */
 export function initControllers(opts: InitControllersOptions): void {
+    const MODULE_EXT = path.extname(__filename);
+
     let cwd = toStringSafe(opts.cwd);
     if (isEmptyString(cwd)) {
         cwd = path.join(
@@ -946,6 +1010,15 @@ export function initControllers(opts: InitControllersOptions): void {
         );
     }
     cwd = path.resolve(cwd);
+
+    let onControllerCreated: ControllerCreatedEventHandler;
+    let onFileLoaded: ControllerFileLoadedEventHandler;
+    let onFileLoading: ControllerFileLoadingEventHandler;
+    if (!_.isNil(opts.events)) {
+        onControllerCreated = opts.events.onControllerCreated;
+        onFileLoaded = opts.events.onFileLoaded;
+        onFileLoading = opts.events.onFileLoading;
+    }
 
     // controller class name
     let controllerClassNameProvider: ControllerClassNameProvider;
@@ -977,29 +1050,34 @@ export function initControllers(opts: InitControllersOptions): void {
         };
     }
 
+    let fileFilter = opts.fileFilter;
+    if (_.isNil(fileFilter)) {
+        fileFilter = () => true;  // default: accept all
+    }
+
     const FILE_PATTERNS = asArray(opts.files)
         .map(fp => toStringSafe(fp))
         .filter(fp => '' !== fp.trim());
     if (!FILE_PATTERNS.length) {
         FILE_PATTERNS.push(
-            '**/*.ts', '**/*.js'
+            '**/*' + MODULE_EXT
         );
     }
 
-    const FILES = (fastGlob.sync(
+    const FILES = fastGlob.sync(
         FILE_PATTERNS,
         {
             absolute: true,
             cwd: cwd,
-            deep: true,
             dot: false,
-            followSymlinkedDirectories: true,
+            followSymbolicLinks: true,
             onlyDirectories: false,
             onlyFiles: true,
             stats: false,
+            throwErrorOnBrokenSymbolicLink: true,
             unique: true,
         }
-    ) as string[]).filter(f => {
+    ).filter(f => {
         return !path.basename(f)
             .startsWith('_');  // files with leading underscores are ignored
     }).sort((x, y) => {
@@ -1038,135 +1116,159 @@ export function initControllers(opts: InitControllersOptions): void {
     const SWAGGER_INFOS: SwaggerInfo[] = [];
 
     for (const F of FILES) {
-        const CONTROLLER_MODULE_FILE = path.basename(F, path.extname(F));
+        if (!fileFilter(F)) {
+            continue;
+        }
 
-        const CONTROLLER_MODULE = require(
-            path.join(
-                path.dirname(F),
-                CONTROLLER_MODULE_FILE,
-            )
-        );
+        let loadingError: any;
+        try {
+            if (onFileLoading) {
+                onFileLoading({
+                    file: F,
+                });
+            }
 
-        const FILE_ROOT_PATH = normalizeRoutePath(
-            path.relative(
-                cwd,
-                path.dirname(F) + '/' + ('index' === CONTROLLER_MODULE_FILE ? '' : CONTROLLER_MODULE_FILE),
-            )
-        );
+            const CONTROLLER_MODULE_FILE = path.basename(F, path.extname(F));
 
-        // custom class name
-        let controllerClassName = controllerClassNameProvider(
-            FILE_ROOT_PATH, F,
-        );
+            const CONTROLLER_MODULE = require(
+                path.join(
+                    path.dirname(F),
+                    CONTROLLER_MODULE_FILE,
+                )
+            );
 
-        const CONTROLLER_CLASS = CONTROLLER_MODULE[controllerClassName];
-        if (CONTROLLER_CLASS) {
-            const ROOT_PATH = FILE_ROOT_PATH.split('/@')
-                .join('/:');
+            const FILE_ROOT_PATH = normalizeRoutePath(
+                path.relative(
+                    cwd,
+                    path.dirname(F) + '/' + ('index' === CONTROLLER_MODULE_FILE ? '' : CONTROLLER_MODULE_FILE),
+                )
+            );
 
-            if (_.isNil(ROUTERS[ROOT_PATH])) {
-                ROUTERS[ROOT_PATH] = express.Router({
-                    mergeParams: true,
+            // custom class name
+            let controllerClassName = controllerClassNameProvider(
+                FILE_ROOT_PATH, F,
+            );
+
+            const CONTROLLER_CLASS = CONTROLLER_MODULE[controllerClassName];
+            if (CONTROLLER_CLASS) {
+                const ROOT_PATH = FILE_ROOT_PATH.split('/@')
+                    .join('/:');
+
+                if (_.isNil(ROUTERS[ROOT_PATH])) {
+                    ROUTERS[ROOT_PATH] = express.Router({
+                        mergeParams: true,
+                    });
+
+                    opts.app
+                        .use(ROOT_PATH, ROUTERS[ROOT_PATH]);
+                }
+
+                const ROUTER = ROUTERS[ROOT_PATH];
+
+                // constructor arguments
+                let controllerConstructorArgs = controllerConstructorArgsProvider(
+                    opts.app,
+                    ROOT_PATH,
+                    ROUTER,
+                    F,
+                );
+                if (_.isNil(controllerConstructorArgs)) {
+                    controllerConstructorArgs = [];  // default
+                }
+                if (!_.isArray(controllerConstructorArgs)) {
+                    // convert to array
+                    const ARR = controllerConstructorArgs;
+
+                    controllerConstructorArgs = [];
+                    for (let i = 0; i < ARR.length; i++) {
+                        (controllerConstructorArgs as Array<any>).push(
+                            ARR[i]
+                        );
+                    }
+                }
+
+                // s. https://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
+                const CONTROLLER: Controller = new (Function.prototype.bind.apply(
+                    CONTROLLER_CLASS, [CONTROLLER_CLASS].concat(
+                        controllerConstructorArgs
+                    ))
+                );
+
+                if (onControllerCreated) {
+                    onControllerCreated(
+                        {
+                            controller: CONTROLLER,
+                            file: F,
+                        }
+                    );
+                }
+
+                const ROUTER_MIDDLEWARES = asArray(CONTROLLER.__use)
+                    .map(rmw => wrapHandlerForController(CONTROLLER, rmw, false));
+                if (ROUTER_MIDDLEWARES.length) {
+                    ROUTER.use
+                        .apply(ROUTER, ROUTER_MIDDLEWARES);
+                }
+
+                if (!_.isNil(CONTROLLER.__init)) {
+                    CONTROLLER.__init();
+                }
+
+                // get all methods, which have an
+                // 'INITIALIZE_ROUTE' function
+                const METHOD_NAMES = Object.getOwnPropertyNames(
+                    CONTROLLER_CLASS.prototype
+                ).filter(mn => {
+                    return _.isFunction(
+                        CONTROLLER[mn][INITIALIZE_ROUTE]
+                    );
+                }).sort((x, y) => {
+                    const COMP_0 = compareValuesBy(x, y, (mn) => {
+                        switch (mn) {
+                            case 'index':
+                                return Number.MIN_SAFE_INTEGER;  // 'index' method is always first
+                        }
+
+                        return Number.MAX_SAFE_INTEGER;
+                    });
+                    if (0 !== COMP_0) {
+                        return COMP_0;
+                    }
+
+                    return compareValuesBy(x, y, i => {
+                        return normalizeString(i);
+                    });
                 });
 
-                opts.app
-                    .use(ROOT_PATH, ROUTERS[ROOT_PATH]);
-            }
+                // execute 'INITIALIZE_ROUTE' functions
+                // and setup swagger
+                for (const MN of METHOD_NAMES) {
+                    const SWAGGER: SwaggerInfo = CONTROLLER[MN][SWAGGER_INFO];
 
-            const ROUTER = ROUTERS[ROOT_PATH];
+                    if (!_.isNil(SWAGGER)) {
+                        SWAGGER.controller = CONTROLLER;
+                        SWAGGER.controllerMethod = CONTROLLER[MN];
+                        SWAGGER.methods = asArray<string>(CONTROLLER[MN][METHOD_LIST]);
+                        SWAGGER.controllerRootPath = ROOT_PATH;
 
-            // constructor arguments
-            let controllerConstructorArgs = controllerConstructorArgsProvider(
-                opts.app,
-                ROOT_PATH,
-                ROUTER,
-                F,
-            );
-            if (_.isNil(controllerConstructorArgs)) {
-                controllerConstructorArgs = [];  // default
-            }
-            if (!_.isArray(controllerConstructorArgs)) {
-                // convert to array
-                const ARR = controllerConstructorArgs;
+                        SWAGGER_INFOS.push(SWAGGER);
+                    }
 
-                controllerConstructorArgs = [];
-                for (let i = 0; i < ARR.length; i++) {
-                    (controllerConstructorArgs as Array<any>).push(
-                        ARR[i]
+                    CONTROLLER[MN][INITIALIZE_ROUTE](
+                        CONTROLLER
                     );
                 }
             }
+        } catch (e) {
+            loadingError = e;
 
-            // s. https://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-            const CONTROLLER: Controller = new (Function.prototype.bind.apply(
-                CONTROLLER_CLASS, [CONTROLLER_CLASS].concat(
-                    controllerConstructorArgs
-                ))
-            );
-
-            if (opts.events) {
-                if (opts.events.onControllerCreated) {
-                    opts.events.onControllerCreated({
-                        controller: CONTROLLER,
-                        file: F,
-                    });
-                }
-            }
-
-            const ROUTER_MIDDLEWARES = asArray(CONTROLLER.__use)
-                .map(rmw => wrapHandlerForController(CONTROLLER, rmw, false));
-            if (ROUTER_MIDDLEWARES.length) {
-                ROUTER.use
-                    .apply(ROUTER, ROUTER_MIDDLEWARES);
-            }
-
-            if (!_.isNil(CONTROLLER.__init)) {
-                CONTROLLER.__init();
-            }
-
-            // get all methods, which have an
-            // 'INITIALIZE_ROUTE' function
-            const METHOD_NAMES = Object.getOwnPropertyNames(
-                CONTROLLER_CLASS.prototype
-            ).filter(mn => {
-                return _.isFunction(
-                    CONTROLLER[mn][INITIALIZE_ROUTE]
-                );
-            }).sort((x, y) => {
-                const COMP_0 = compareValuesBy(x, y, (mn) => {
-                    switch (mn) {
-                        case 'index':
-                            return Number.MIN_SAFE_INTEGER;  // 'index' method is always first
-                    }
-
-                    return Number.MAX_SAFE_INTEGER;
+            throw e;
+        } finally {
+            if (onFileLoaded) {
+                onFileLoaded({
+                    error: loadingError,
+                    file: F,
                 });
-                if (0 !== COMP_0) {
-                    return COMP_0;
-                }
-
-                return compareValuesBy(x, y, i => {
-                    return normalizeString(i);
-                });
-            });
-
-            // execute 'INITIALIZE_ROUTE' functions
-            // and setup swagger
-            for (const MN of METHOD_NAMES) {
-                const SWAGGER: SwaggerInfo = CONTROLLER[MN][SWAGGER_INFO];
-
-                if (!_.isNil(SWAGGER)) {
-                    SWAGGER.controller = CONTROLLER;
-                    SWAGGER.controllerMethod = CONTROLLER[MN];
-                    SWAGGER.methods = asArray<string>(CONTROLLER[MN][METHOD_LIST]);
-                    SWAGGER.controllerRootPath = ROOT_PATH;
-
-                    SWAGGER_INFOS.push(SWAGGER);
-                }
-
-                CONTROLLER[MN][INITIALIZE_ROUTE](
-                    CONTROLLER
-                );
             }
         }
     }
