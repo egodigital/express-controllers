@@ -2,7 +2,8 @@
 
 ## 6.0.0
 
-* changed default value of [files property](https://egodigital.github.io/express-controllers/interfaces/_index_.initcontrollersoptions.html#files) 
+* added [filter](https://egodigital.github.io/express-controllers/interfaces/_index_.initcontrollersoptions.html#filter) property
+* changed default value of [files](https://egodigital.github.io/express-controllers/interfaces/_index_.initcontrollersoptions.html#files) property
 * updated to `fast-glob@^3.1.1`
 
 ## 5.4.0

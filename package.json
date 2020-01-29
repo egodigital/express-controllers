@@ -41,7 +41,7 @@
         "@types/joi": "^14.3.3",
         "@types/js-yaml": "^3.12.2",
         "@types/lodash": "^4.14.149",
-        "@types/node": "^10.14.21",
+        "@types/node": "^10.17.14",
         "@types/swagger-ui-express": "^4.1.1",
         "express": "^4.17.1",
         "fast-glob": "^3.1.1",
