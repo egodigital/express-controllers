@@ -133,6 +133,16 @@ export type ControllerCreatedEventHandler<TApp extends any = ExpressApp> =
     (args: ControllerCreatedEventArguments<TApp>) => any;
 
 /**
+ * A preficate, which checks, if a controller (module) file
+ * should be included or not.
+ *
+ * @param {string} file The full path of the file to check.
+ *
+ * @return {boolean} Handle / include file or not.
+ */
+export type ControllerFileFilter = (file: string) => boolean;
+
+/**
  * Arguments for a 'ControllerFileLoadedEventHandler' instance.
  */
 export interface ControllerFileLoadedEventArguments {
@@ -171,16 +181,6 @@ export interface ControllerFileLoadingEventArguments {
  */
 export type ControllerFileLoadingEventHandler =
     (args: ControllerFileLoadingEventArguments) => void;
-
-/**
- * A preficate, which checks, if a controller (module) file
- * should be included or not.
- *
- * @param {string} file The full path of the file to check.
- *
- * @return {boolean} Handle file or not.
- */
-export type ControllerFilePredicate = (file: string) => boolean;
 
 /**
  * Options for a controller route.
@@ -278,13 +278,13 @@ export interface InitControllersOptions<TApp extends any = ExpressApp> {
         onFileLoading?: ControllerFileLoadingEventHandler;
     };
     /**
-     * Filter function for scanned files (s. 'files').
-     */
-    fileFilter?: ControllerFilePredicate;
-    /**
      * One or more custom glob patterns of files to scan. Default: [ *.js ] or [ *.ts ]
      */
     files?: string | string[];
+    /**
+     * Filter function for scanned files (s. 'files').
+     */
+    filter?: ControllerFileFilter;
     /**
      * Swagger options.
      */
@@ -1050,7 +1050,7 @@ export function initControllers(opts: InitControllersOptions): void {
         };
     }
 
-    let fileFilter = opts.fileFilter;
+    let fileFilter = opts.filter;
     if (_.isNil(fileFilter)) {
         fileFilter = () => true;  // default: accept all
     }
