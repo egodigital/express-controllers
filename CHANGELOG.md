@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 6.1.0
+
+* implemented "after-ware", handlers, which are invoked after a controller method call
+
 ## 6.0.0
 
 * added [filter](https://egodigital.github.io/express-controllers/interfaces/_index_.initcontrollersoptions.html#filter) property

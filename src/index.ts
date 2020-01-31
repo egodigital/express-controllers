@@ -26,6 +26,40 @@ import { asArray, compareValuesBy, isEmptyString, isJoi, normalizeString, toBool
 
 
 /**
+ * A handler, that is invoked after a controller method.
+ *
+ * @param {AfterRequestHandlerContext<TRequest>} context The context.
+ */
+export type AfterRequestHandler<TRequest extends express.Request = express.Request> =
+    (context: AfterRequestHandlerContext<TRequest>) => any;
+
+/**
+ * A context for a handler, that is invoked after a controller method.
+ */
+export interface AfterRequestHandlerContext<TRequest extends express.Request = express.Request> {
+    /**
+     * The error, if occurred.
+     */
+    error?: any | undefined | null;
+    /**
+     * Execute error handler, if an error occurred or not.
+     */
+    executeErrorHandler: boolean;
+    /**
+     * The request (context).
+     */
+    request: TRequest;
+    /**
+     * The response (context).
+     */
+    response: express.Response;
+    /**
+     * The result of the controller method.
+     */
+    result: any | undefined | null;
+}
+
+/**
  * Describes a controller.
  */
 export interface Controller<TApp extends any = ExpressApp> {
@@ -81,6 +115,10 @@ export interface Controller<TApp extends any = ExpressApp> {
      * middleware(s).
      */
     __use?: express.RequestHandler | express.RequestHandler[];
+    /**
+     * Controller wide "after-ware".
+     */
+    __useAfter?: AfterRequestHandler;
 }
 
 /**
@@ -185,7 +223,7 @@ export type ControllerFileLoadingEventHandler =
 /**
  * Options for a controller route.
  */
-export interface ControllerRouteOptions {
+export interface ControllerRouteOptions<TRequest extends express.Request = express.Request> {
     /**
      * A custom error handler for the route.
      */
@@ -202,6 +240,10 @@ export interface ControllerRouteOptions {
      * Additional middleware(s) for the route.
      */
     use?: express.RequestHandler | express.RequestHandler[];
+    /**
+     * Optional "after-ware".
+     */
+    useAfter?: AfterRequestHandler<TRequest>;
 }
 
 /**
@@ -412,6 +454,12 @@ export interface ResponseSerializerContext<TRequest extends express.Request = ex
  */
 export type RouterPath = string | RegExp;
 
+interface WrapHandlerForControllerOptions {
+    controller: Controller;
+    handler: express.RequestHandler;
+    isControllerMethod?: boolean;
+}
+
 
 /**
  * List of body formats.‚
@@ -441,7 +489,8 @@ export enum ObjectValidationFailedReason {
     InvalidInput = 'invalid_input',
 }
 
-
+const AFTER_HANDLER = Symbol('AFTER_HANDLER');
+let afterRequestHandler: AfterRequestHandler;
 const DEFAULT_CONTROLLER_CLASS_NAME = 'Controller';
 const INITIALIZE_ROUTE = Symbol('INITIALIZE_ROUTE');
 let objValidateFailedHandler: ObjectValidationFailedHandler;
@@ -933,6 +982,15 @@ export function TRACE(...args: any[]): DecoratorFunction {
 
 
 /**
+ * Returns the global handler, that is invoked after a controller method.
+ *
+ * @return {AfterRequestHandler<TRequest>} The handler.
+ */
+export function getAfterRequestHandler<TRequest extends express.Request = express.Request>(): AfterRequestHandler<TRequest> {
+    return afterRequestHandler;
+}
+
+/**
  * Returns the global handler, if an object validation fails.
  *
  * @return {ObjectValidationFailedHandler} The handler.
@@ -1204,7 +1262,7 @@ export function initControllers(opts: InitControllersOptions): void {
                 }
 
                 const ROUTER_MIDDLEWARES = asArray(CONTROLLER.__use)
-                    .map(rmw => wrapHandlerForController(CONTROLLER, rmw, false));
+                    .map(rmw => wrapHandlerForController({ controller: CONTROLLER, handler: rmw }));
                 if (ROUTER_MIDDLEWARES.length) {
                     ROUTER.use
                         .apply(ROUTER, ROUTER_MIDDLEWARES);
@@ -1274,6 +1332,17 @@ export function initControllers(opts: InitControllersOptions): void {
     }
 
     setupSwaggerUI(opts.app, opts.swagger, SWAGGER_INFOS);
+}
+
+/**
+ * Sets a global handler, that is invoked after a controller method.
+ *
+ * @param {AfterRequestHandler<TRequest>|undefined|null} newHandler The new handler.
+ */
+export function setAfterRequestHandler<TRequest extends express.Request = express.Request>(
+    newHandler: AfterRequestHandler<TRequest> | undefined | null
+) {
+    afterRequestHandler = newHandler;
 }
 
 /**
@@ -1378,6 +1447,7 @@ function createRouteInitializer(
 
                 VALUE[REQUEST_ERROR_HANDLER] = opts.onError;
                 VALUE[RESPONSE_SERIALIZER] = opts.serializer;
+                VALUE[AFTER_HANDLER] = opts.useAfter;
                 VALUE[INITIALIZE_ROUTE] = function (controller: Controller) {
                     if (!_.isNil(BASE_FUNC)) {
                         BASE_FUNC.apply(null, arguments);
@@ -1466,19 +1536,23 @@ function createRouteInitializerForMethod(
                     [path as any]
                         .concat(
                             asArray(routeMiddlewares)
-                                .map(rmw => wrapHandlerForController(controller, rmw, false))
+                                .map(rmw => wrapHandlerForController({ controller, handler: rmw }))
                         )
                         .concat(
                             [
                                 createRouteAuthorizer(controller, VALUE),
-                            ].map(a => wrapHandlerForController(controller, a, false))
+                            ].map(a => wrapHandlerForController({ controller, handler: a }))
                         )
                         .concat(
                             asArray(descriptor.value[REQUEST_VALIDATORS])
-                                .map(rv => wrapHandlerForController(controller, rv, false))
+                                .map(rv => wrapHandlerForController({ controller, handler: rv }))
                         )
                         .concat([
-                            wrapHandlerForController(controller, handler, true)]
+                            wrapHandlerForController({
+                                controller,
+                                handler,
+                                isControllerMethod: true,
+                            })]
                         )
                 );
         },
@@ -1490,19 +1564,23 @@ function createRouteInitializerForMethod(
                     [path as any]
                         .concat(
                             asArray(routeMiddlewares)
-                                .map(rmw => wrapHandlerForController(controller, rmw, false))
+                                .map(rmw => wrapHandlerForController({ controller, handler: rmw }))
                         )
                         .concat(
                             [
                                 createRouteAuthorizer(controller, VALUE),
-                            ].map(a => wrapHandlerForController(controller, a, false))
+                            ].map(a => wrapHandlerForController({ controller, handler: a }))
                         )
                         .concat(
                             asArray(descriptor.value[REQUEST_VALIDATORS])
-                                .map(rv => wrapHandlerForController(controller, rv, false))
+                                .map(rv => wrapHandlerForController({ controller, handler: rv }))
                         )
                         .concat(
-                            handlers.map(h => wrapHandlerForController(controller, h, true))
+                            handlers.map(h => wrapHandlerForController({
+                                controller,
+                                handler: h,
+                                isControllerMethod: true,
+                            }))
                         )
                 );
         },
@@ -1769,66 +1847,105 @@ function toObjectValidatorOptions(optsOrSchema: ObjectValidatorOptionsValue): Ob
 }
 
 function wrapHandlerForController(
-    controller: Controller, handler: express.RequestHandler,
-    useSerializer: boolean
+    opts: WrapHandlerForControllerOptions
 ): express.RequestHandler {
     return async function (req: express.Request, res: express.Response) {
+        let executeErrorHandler = true;
+        let lastErr: any;
+        let result: any;
+
+        // "after-ware"
+        let useAfter: AfterRequestHandler = opts.handler[AFTER_HANDLER];
+        if (_.isNil(useAfter)) {
+            useAfter = opts.controller.__useAfter;  // default of controller
+        }
+        if (_.isNil(useAfter)) {
+            useAfter = getAfterRequestHandler();  // global default
+        }
+
         try {
-            const HANDLER_RESULT = await Promise.resolve(
-                handler.apply(controller, arguments)
-            );
+            try {
+                const HANDLER_RESULT = await Promise.resolve(
+                    opts.handler.apply(opts.controller, arguments)
+                );
 
-            let result: any;
+                if (opts.isControllerMethod) {
+                    // serializer
+                    let serializer: ResponseSerializer = opts.handler[RESPONSE_SERIALIZER];  // custom serializer by request
+                    if (_.isNil(serializer)) {
+                        serializer = opts.controller.__serialize;  // default of controller
+                    }
+                    if (_.isNil(serializer)) {
+                        serializer = getResponseSerializer();  // global default
+                    }
 
-            if (useSerializer) {
-                let serializer: ResponseSerializer = handler[RESPONSE_SERIALIZER];  // custom serializer by request
-                if (_.isNil(serializer)) {
-                    serializer = controller.__serialize;  // default of controller
-                }
-                if (_.isNil(serializer)) {
-                    serializer = getResponseSerializer();  // global default
-                }
+                    if (_.isNil(serializer)) {
+                        // no serializer
+                        result = HANDLER_RESULT;
+                    } else {
+                        const CTX: ResponseSerializerContext = {
+                            request: req,
+                            response: res,
+                            result: HANDLER_RESULT,
+                        };
 
-                if (_.isNil(serializer)) {
-                    // no serializer
-                    result = HANDLER_RESULT;
+                        result = await Promise.resolve(
+                            serializer.call(opts.controller, CTX)
+                        );
+                    }
                 } else {
-                    const CTX: ResponseSerializerContext = {
-                        request: req,
-                        response: res,
-                        result: HANDLER_RESULT,
-                    };
-
-                    result = await Promise.resolve(
-                        serializer.apply(controller, [
-                            CTX
-                        ])
-                    );
+                    result = HANDLER_RESULT;
                 }
-            } else {
-                result = HANDLER_RESULT;
+
+                return result;
+            } catch (e) {
+                lastErr = e;
+
+                throw e;
+            } finally {
+                if (opts.isControllerMethod) {
+                    if (!_.isNil(useAfter)) {
+                        // call after-ware
+
+                        const CTX: AfterRequestHandlerContext = {
+                            error: lastErr,
+                            executeErrorHandler: executeErrorHandler,
+                            request: req,
+                            response: res,
+                            result: result,
+                        };
+
+                        try {
+                            await Promise.resolve(
+                                useAfter.call(opts.controller, CTX)
+                            );
+                        } finally {
+                            executeErrorHandler = CTX.executeErrorHandler;
+                        }
+                    }
+                }
+            }
+        } catch {
+            if (!executeErrorHandler) {
+                return;  // do not call error handler
             }
 
-            return result;
-        } catch (e) {
-            let errorHandler: RequestErrorHandler = handler[REQUEST_ERROR_HANDLER];  // custom handler by request
+            let errorHandler: RequestErrorHandler = opts.handler[REQUEST_ERROR_HANDLER];  // custom handler by request
             if (_.isNil(errorHandler)) {
-                errorHandler = controller.__error;  // default of controller
+                errorHandler = opts.controller.__error;  // default of controller
             }
             if (_.isNil(errorHandler)) {
                 errorHandler = getRequestErrorHandler();  // (global) default
             }
 
             const CTX: RequestErrorHandlerContext = {
-                error: e,
+                error: lastErr,
                 request: req,
                 response: res,
             };
 
-            return Promise.resolve(
-                errorHandler.apply(controller, [
-                    CTX
-                ])
+            return await Promise.resolve(
+                errorHandler.call(opts.controller, CTX)
             );
         }
     };
