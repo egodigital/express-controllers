@@ -146,6 +146,7 @@ const app = express();
 initControllers({
     app,
     cwd: __dirname + '/controllers',
+    files: ['**/*.ts', '**/*.js']
 });
 
 app.listen(8080, () => {

@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 6.2.0
+
+* update README.md to fix issue [#2](https://github.com/egodigital/express-controllers/issues/2)
+
 ## 6.1.0
 
 * implemented "after-ware", handlers, which are invoked after a controller method call
