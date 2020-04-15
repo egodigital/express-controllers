@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 6.1.3
+
+* add `node >= 10.0.0` as minimum requirement to package.json/.npmrc
+
 ## 6.1.2
 
 * update README.md to fix issue [#2](https://github.com/egodigital/express-controllers/issues/2)
