@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 6.1.4
+
+* fix `minimist < 0.2.1` security issue
+
 ## 6.1.3
 
 * add `node >= 10.0.0` as minimum requirement to package.json/.npmrc
