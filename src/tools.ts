@@ -103,7 +103,7 @@ async function serializeForJSONInner(
         if (_.isNil(v)) {
             return {
                 serialized: v,
-                value: v,
+                value: v
             };
         }
 
@@ -116,7 +116,7 @@ async function serializeForJSONInner(
         // new
         const NEW_VALUE: HandledSerializedValues = {
             serialized: await serializeForJSONInner(v, handledValues),
-            value: v,
+            value: v
         };
         handledValues.push(NEW_VALUE);
 

@@ -1005,8 +1005,8 @@ export function getObjectValidationFailedHandler(): ObjectValidationFailedHandle
                 success: false,
                 data: {
                     details: ctx.details,
-                    reason: ctx.reason,
-                },
+                    reason: ctx.reason
+                }
             };
 
             return ctx.response
@@ -1029,11 +1029,9 @@ export function getRequestErrorHandler(): RequestErrorHandler {
     if (_.isNil(handler)) {
         // default
 
-        handler = (ctx) => {
-            return ctx.response
-                .status(500)
-                .send();
-        };
+        handler = (ctx) => ctx.response
+            .status(500)
+            .send();
     }
 
     return handler;
@@ -1133,18 +1131,16 @@ export function initControllers(opts: InitControllersOptions): void {
             onlyFiles: true,
             stats: false,
             throwErrorOnBrokenSymbolicLink: true,
-            unique: true,
+            unique: true
         }
-    ).filter(f => {
-        return !path.basename(f)
-            .startsWith('_');  // files with leading underscores are ignored
-    }).sort((x, y) => {
+    ).filter(f =>
+        !path.basename(f)
+            .startsWith('_')  // files with leading underscores are ignored
+    ).sort((x, y) => {
         // first sort by directory name
-        const COMP_0 = compareValuesBy(x, y, f => {
-            return normalizeString(
-                path.dirname(f)
-            );
-        });
+        const COMP_0 = compareValuesBy(x, y, f => normalizeString(
+            path.dirname(f)
+        ));
         if (0 !== COMP_0) {
             return COMP_0;
         }
@@ -1162,11 +1158,9 @@ export function initControllers(opts: InitControllersOptions): void {
         }
 
         // then by file name
-        return compareValuesBy(x, y, f => {
-            return normalizeString(
-                path.basename(f)
-            );
-        });
+        return compareValuesBy(x, y, f => normalizeString(
+            path.basename(f)
+        ));
     });
 
     const ROUTERS: { [path: string]: express.Router } = {};
@@ -1182,7 +1176,7 @@ export function initControllers(opts: InitControllersOptions): void {
         try {
             if (onFileLoading) {
                 onFileLoading({
-                    file: F,
+                    file: F
                 });
             }
 
@@ -1214,7 +1208,7 @@ export function initControllers(opts: InitControllersOptions): void {
 
                 if (_.isNil(ROUTERS[ROOT_PATH])) {
                     ROUTERS[ROOT_PATH] = express.Router({
-                        mergeParams: true,
+                        mergeParams: true
                     });
 
                     opts.app
@@ -1239,7 +1233,7 @@ export function initControllers(opts: InitControllersOptions): void {
 
                     controllerConstructorArgs = [];
                     for (let i = 0; i < ARR.length; i++) {
-                        (controllerConstructorArgs as Array<any>).push(
+                        (controllerConstructorArgs as any[]).push(
                             ARR[i]
                         );
                     }
@@ -1256,7 +1250,7 @@ export function initControllers(opts: InitControllersOptions): void {
                     onControllerCreated(
                         {
                             controller: CONTROLLER,
-                            file: F,
+                            file: F
                         }
                     );
                 }
@@ -1276,11 +1270,9 @@ export function initControllers(opts: InitControllersOptions): void {
                 // 'INITIALIZE_ROUTE' function
                 const METHOD_NAMES = Object.getOwnPropertyNames(
                     CONTROLLER_CLASS.prototype
-                ).filter(mn => {
-                    return _.isFunction(
-                        CONTROLLER[mn][INITIALIZE_ROUTE]
-                    );
-                }).sort((x, y) => {
+                ).filter(mn => _.isFunction(
+                    CONTROLLER[mn][INITIALIZE_ROUTE]
+                )).sort((x, y) => {
                     const COMP_0 = compareValuesBy(x, y, (mn) => {
                         switch (mn) {
                             case 'index':
@@ -1293,9 +1285,7 @@ export function initControllers(opts: InitControllersOptions): void {
                         return COMP_0;
                     }
 
-                    return compareValuesBy(x, y, i => {
-                        return normalizeString(i);
-                    });
+                    return compareValuesBy(x, y, i => normalizeString(i));
                 });
 
                 // execute 'INITIALIZE_ROUTE' functions
@@ -1325,7 +1315,7 @@ export function initControllers(opts: InitControllersOptions): void {
             if (onFileLoaded) {
                 onFileLoaded({
                     error: loadingError,
-                    file: F,
+                    file: F
                 });
             }
         }
@@ -1392,13 +1382,13 @@ function createRouteInitializer(
 
     if (isJoi(opts)) {
         opts = {
-            schema: opts,
+            schema: opts
         };
     }
 
     if (!_.isObjectLike(opts) || _.isRegExp(opts)) {
         opts = {
-            path: opts as RouterPath,
+            path: opts as RouterPath
         };
     }
 
@@ -1540,7 +1530,7 @@ function createRouteInitializerForMethod(
                         )
                         .concat(
                             [
-                                createRouteAuthorizer(controller, VALUE),
+                                createRouteAuthorizer(controller, VALUE)
                             ].map(a => wrapHandlerForController({ controller, handler: a }))
                         )
                         .concat(
@@ -1551,7 +1541,7 @@ function createRouteInitializerForMethod(
                             wrapHandlerForController({
                                 controller,
                                 handler,
-                                isControllerMethod: true,
+                                isControllerMethod: true
                             })]
                         )
                 );
@@ -1568,7 +1558,7 @@ function createRouteInitializerForMethod(
                         )
                         .concat(
                             [
-                                createRouteAuthorizer(controller, VALUE),
+                                createRouteAuthorizer(controller, VALUE)
                             ].map(a => wrapHandlerForController({ controller, handler: a }))
                         )
                         .concat(
@@ -1579,7 +1569,7 @@ function createRouteInitializerForMethod(
                             handlers.map(h => wrapHandlerForController({
                                 controller,
                                 handler: h,
-                                isControllerMethod: true,
+                                isControllerMethod: true
                             }))
                         )
                 );
@@ -1595,7 +1585,7 @@ function createRouteInitializerForMethod(
                             {
                                 failedHandler: (opts as ControllerRouteWithBodyOptions).onValidationFailed,
                                 limit: (opts as ControllerRouteWithBodyOptions).limit,
-                                schema: SCHEMA,
+                                schema: SCHEMA
                             },
                             req => method !== normalizeString(req.method),
                         );
@@ -1607,7 +1597,7 @@ function createRouteInitializerForMethod(
                             {
                                 failedHandler: (opts as ControllerRouteWithBodyOptions).onValidationFailed,
                                 limit: (opts as ControllerRouteWithBodyOptions).limit,
-                                schema: SCHEMA,
+                                schema: SCHEMA
                             },
                             req => method !== normalizeString(req.method),
                         );
@@ -1638,7 +1628,7 @@ function formValidate(
     return objectValidate(
         express.urlencoded({
             extended: true,
-            limit: LIMIT,
+            limit: LIMIT
         }),
         OPTS,
         skipIf,
@@ -1666,7 +1656,7 @@ function jsonValidate(
 
     return objectValidate(
         express.json({
-            limit: LIMIT,
+            limit: LIMIT
         }),
         OPTS,
         skipIf,
@@ -1729,10 +1719,10 @@ function objectValidate(
                     details: details,
                     reason: reason,
                     request: req,
-                    response: res,
+                    response: res
                 })
             );
-        },
+        }
     ]);
 }
 
@@ -1769,7 +1759,7 @@ function toControllerRouteOptions(args: any[]): ControllerRouteOptions {
             // path: RouterPath
 
             opts = {
-                path: FIRST_ARG,
+                path: FIRST_ARG
             };
         }
     }
@@ -1800,7 +1790,7 @@ function toControllerRouteWithBodyOptions(args: any[]): ControllerRouteWithBodyO
             // [2] onValidationFailed?: ObjectValidationFailedHandler
 
             opts = {
-                schema: FIRST_ARG as joi.AnySchema,
+                schema: FIRST_ARG as joi.AnySchema
             };
 
             UPDATE_OPTS_BY_SCHEMA_ARGS(args[1], args[2]);
@@ -1819,7 +1809,7 @@ function toControllerRouteWithBodyOptions(args: any[]): ControllerRouteWithBodyO
 
             opts = {
                 path: FIRST_ARG as RouterPath,
-                schema: args[1] as joi.AnySchema,
+                schema: args[1] as joi.AnySchema
             };
 
             UPDATE_OPTS_BY_SCHEMA_ARGS(args[2], args[3]);
@@ -1836,7 +1826,7 @@ function toObjectValidatorOptions(optsOrSchema: ObjectValidatorOptionsValue): Ob
     } else {
         if (isJoi(optsOrSchema)) {
             opts = {
-                schema: optsOrSchema,
+                schema: optsOrSchema
             };
         } else {
             opts = optsOrSchema as ObjectValidatorOptions;
@@ -1886,7 +1876,7 @@ function wrapHandlerForController(
                         const CTX: ResponseSerializerContext = {
                             request: req,
                             response: res,
-                            result: HANDLER_RESULT,
+                            result: HANDLER_RESULT
                         };
 
                         result = await Promise.resolve(
@@ -1912,7 +1902,7 @@ function wrapHandlerForController(
                             executeErrorHandler: executeErrorHandler,
                             request: req,
                             response: res,
-                            result: result,
+                            result: result
                         };
 
                         try {
@@ -1941,7 +1931,7 @@ function wrapHandlerForController(
             const CTX: RequestErrorHandlerContext = {
                 error: lastErr,
                 request: req,
-                response: res,
+                response: res
             };
 
             return await Promise.resolve(

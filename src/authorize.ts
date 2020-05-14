@@ -276,7 +276,7 @@ export function createRouteAuthorizer(
                         response: res,
                         resources: AUTHORIZE_CTX.resources,
                         result: authorizeResult,
-                        roles: AUTHORIZE_CTX.roles,
+                        roles: AUTHORIZE_CTX.roles
                     };
 
                     return Promise.resolve(
@@ -350,7 +350,7 @@ function toAuthorizeOptions(args: any[]): AuthorizeOptions {
                 // [0] authorize: AuthorizeHandler
 
                 opts = {
-                    authorize: FIRST_ARG as AuthorizeHandler,
+                    authorize: FIRST_ARG as AuthorizeHandler
                 };
 
                 if (args.length > 1) {

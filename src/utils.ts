@@ -124,11 +124,11 @@ export function readAll(stream: NodeJS.ReadStream): Promise<Buffer> {
         };
 
         try {
-            stream.once("error", (err) => {
+            stream.once('error', (err) => {
                 COMPLETED(err);
             });
 
-            stream.on("data", (chunk: Buffer) => {
+            stream.on('data', (chunk: Buffer) => {
                 try {
                     if (data.length > 0) {
                         data = Buffer.concat([data, chunk]);
@@ -138,7 +138,7 @@ export function readAll(stream: NodeJS.ReadStream): Promise<Buffer> {
                 }
             });
 
-            stream.once("end", () => {
+            stream.once('end', () => {
                 COMPLETED();
             });
         } catch (e) {

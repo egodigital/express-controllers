@@ -82,7 +82,7 @@ export interface InitControllersSwaggerOptions {
      * The list of definitions.
      */
     definitions?: {
-        [name: string]: any,
+        [name: string]: any;
     };
     /**
      * General document information.
@@ -121,7 +121,7 @@ export type InitControllersSwaggerOptionsValue = InitControllersSwaggerOptions |
  * List of Swagger definitions.
  */
 export type SwaggerDefinitionList = {
-    [key: string]: any
+    [key: string]: any;
 };
 
 /**
@@ -216,7 +216,7 @@ export interface SwaggerInfo {
      * List of router methods, grouped by paths.
      */
     groupedRouterMethods: {
-        [path: string]: string[],
+        [path: string]: string[];
     };
     /**
      * List of supported methods.
@@ -385,17 +385,17 @@ export function setupSwaggerUI(
 
     // prepare version 2.0 document
     let newSwaggerDoc = {
-        'swagger': '2.0',
-        'info': undefined as any,
-        'host': undefined as any,
-        'tags': undefined as any,
-        'schemes': undefined as any,
-        'paths': (infos.length ?
+        swagger: '2.0',
+        info: undefined as any,
+        host: undefined as any,
+        tags: undefined as any,
+        schemes: undefined as any,
+        paths: (infos.length ?
             {} : undefined) as any,
-        'definitions': undefined as any,
-        'externalDocs': undefined as any,
-        'basePath': undefined as any,
-        'securityDefinitions': undefined as any,
+        definitions: undefined as any,
+        externalDocs: undefined as any,
+        basePath: undefined as any,
+        securityDefinitions: undefined as any
     };
 
     if (opts.document) {
@@ -440,18 +440,14 @@ export function setupSwaggerUI(
             newSwaggerDoc.tags = [];
 
             // sort by tag name
-            Object.keys(opts.document.tags).sort((x, y) => {
-                return compareValuesBy(x, y, t => {
-                    return normalizeString(t);
-                });
-            }).forEach(t => {
+            Object.keys(opts.document.tags).sort((x, y) => compareValuesBy(x, y, t => normalizeString(t))).forEach(t => {
                 const TAG_NAME = t.trim();
                 const TAG_DESCRIPTION = toStringSafe(opts.document.tags[t])
                     .trim();
 
                 newSwaggerDoc.tags.push({
                     name: TAG_NAME,
-                    description: TAG_DESCRIPTION,
+                    description: TAG_DESCRIPTION
                 });
             });
         }
@@ -485,11 +481,7 @@ export function setupSwaggerUI(
         newSwaggerDoc.definitions = {};
 
         // sort by name
-        Object.keys(opts.definitions).sort((x, y) => {
-            return compareValuesBy(x, y, dn => {
-                return normalizeString(dn);
-            });
-        }).forEach(dn => {
+        Object.keys(opts.definitions).sort((x, y) => compareValuesBy(x, y, dn => normalizeString(dn))).forEach(dn => {
             const DEF_NAME = dn.trim();
             if ('' === DEF_NAME) {
                 return;
@@ -503,7 +495,7 @@ export function setupSwaggerUI(
         // path definitions
 
         const PATH_ACTIONS: {
-            action: () => void,
+            action: () => void;
             swaggerPath: string;
         }[] = [];
 
@@ -540,7 +532,7 @@ export function setupSwaggerUI(
                                     doesValidate: !!asArray(si.controllerMethod[REQUEST_VALIDATORS]).length,
                                     hasAuthorize: !_.isNil(si.controllerMethod[AUTHORIZER_OPTIONS]),
                                     method: m.toUpperCase(),
-                                    path: routePath,
+                                    path: routePath
                                 };
 
                                 pathDefinitionUpdater(
@@ -554,17 +546,13 @@ export function setupSwaggerUI(
                                 newSwaggerDoc.paths[SWAGGER_PATH][m] = pathDefinition;
                             }
                         });
-                    },
+                    }
                 });
             });
         });
 
         // sort by Swagger path
-        PATH_ACTIONS.sort((x, y) => {
-            return compareValuesBy(x, y, i => {
-                return normalizeString(i.swaggerPath);
-            });
-        }).forEach(pa => {
+        PATH_ACTIONS.sort((x, y) => compareValuesBy(x, y, i => normalizeString(i.swaggerPath))).forEach(pa => {
             pa.action();
         });
     }
@@ -602,10 +590,10 @@ export function setupSwaggerUI(
     if (toBooleanSafe(opts.canDownload, true)) {
         // download link (JSON)
         const JSON_DOC = JSON.stringify(newSwaggerDoc, null, 2);
-        ROUTER.get(`/json`, function (req, res) {
+        ROUTER.get('/json', function (req, res) {
             return res.status(200)
                 .header('content-type', 'application/json; charset=utf-8')
-                .header('content-disposition', `attachment; filename=api.json`)
+                .header('content-disposition', 'attachment; filename=api.json')
                 .send(
                     Buffer.from(JSON_DOC, 'utf8')
                 );
@@ -613,10 +601,10 @@ export function setupSwaggerUI(
 
         // download link (YAML)
         const YAML_DOC = yaml.safeDump(newSwaggerDoc);
-        ROUTER.get(`/yaml`, function (req, res) {
+        ROUTER.get('/yaml', function (req, res) {
             return res.status(200)
                 .header('content-type', 'application/x-yaml; charset=utf-8')
-                .header('content-disposition', `attachment; filename=api.yaml`)
+                .header('content-disposition', 'attachment; filename=api.yaml')
                 .send(
                     Buffer.from(YAML_DOC, 'utf8')
                 );
@@ -630,7 +618,7 @@ export function setupSwaggerUI(
 function toSwaggerInfo(args: any[]): SwaggerInfo {
     const INFO: SwaggerInfo = {
         groupedRouterMethods: {},
-        pathDefinition: undefined,
+        pathDefinition: undefined
     };
 
     const FIRST_ARG: any = args[0];
@@ -641,7 +629,7 @@ function toSwaggerInfo(args: any[]): SwaggerInfo {
 
         INFO.pathDefinition = args[1] as SwaggerPathDefinition;
         INFO.options = {
-            pathDefinitionUpdater: FIRST_ARG as SwaggerPathDefinitionUpdater,
+            pathDefinitionUpdater: FIRST_ARG as SwaggerPathDefinitionUpdater
         };
     } else {
         // [0] pathDefinition: SwaggerPathDefinition
@@ -653,7 +641,7 @@ function toSwaggerInfo(args: any[]): SwaggerInfo {
                 // [1] pathDefinitionUpdater: SwaggerPathDefinitionUpdater
 
                 INFO.options = {
-                    pathDefinitionUpdater: args[1] as SwaggerPathDefinitionUpdater,
+                    pathDefinitionUpdater: args[1] as SwaggerPathDefinitionUpdater
                 };
             } else {
                 // [1] opts?: SwaggerOptions
