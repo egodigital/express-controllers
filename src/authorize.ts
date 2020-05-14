@@ -62,7 +62,7 @@ export interface AuthorizeFailedHandlerContext<TRequest extends express.Request 
  *
  * @param {AuthorizeHandlerContext<TRequest>} context The context.
  *
- * @return {AuthorizeHandlerResult|PromiseLike<AuthorizeHandlerResult>} The result.
+ * @returns {AuthorizeHandlerResult|PromiseLike<AuthorizeHandlerResult>} The result.
  */
 export type AuthorizeHandler<TRequest extends express.Request = express.Request> = (context: AuthorizeHandlerContext<TRequest>) => AuthorizeHandlerResult | PromiseLike<AuthorizeHandlerResult>;
 
@@ -137,7 +137,7 @@ let authorizationFailedHandler: AuthorizeFailedHandler;
  * @param {string|string[]} resources One or more resource names.
  * @param {AuthorizeFailedHandler} [onAuthorizeFailed] Custom handler, that is invoked if authorization failes.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function Authorize(resources: string | string[], onAuthorizeFailed?: AuthorizeFailedHandler): DecoratorFunction;
 /**
@@ -147,7 +147,7 @@ export function Authorize(resources: string | string[], onAuthorizeFailed?: Auth
  * @param {string|string[]} resources One or more resource names.
  * @param {AuthorizeFailedHandler} [onAuthorizeFailed] Custom handler, that is invoked if authorization failes.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function Authorize(roles: string | string[], resources: string | string[], onAuthorizeFailed?: AuthorizeFailedHandler): DecoratorFunction;
 /**
@@ -157,7 +157,7 @@ export function Authorize(roles: string | string[], resources: string | string[]
  * @param {string|string[]} [resources] One or more resource names.
  * @param {AuthorizeFailedHandler} [onAuthorizeFailed] Custom handler, that is invoked if authorization failes.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function Authorize(authorize: AuthorizeHandler, resources?: string | string[], onAuthorizeFailed?: AuthorizeFailedHandler): DecoratorFunction;
 /**
@@ -166,7 +166,7 @@ export function Authorize(authorize: AuthorizeHandler, resources?: string | stri
  * @param {AuthorizeHandler} authorize The custom authorization handler.
  * @param {AuthorizeFailedHandler} onAuthorizeFailed Custom handler, that is invoked if authorization failes.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function Authorize(authorize: AuthorizeHandler, onAuthorizeFailed: AuthorizeFailedHandler): DecoratorFunction;
 /**
@@ -177,7 +177,7 @@ export function Authorize(authorize: AuthorizeHandler, onAuthorizeFailed: Author
  * @param {string|string[]} resources One or more resource names.
  * @param {AuthorizeFailedHandler} [onAuthorizeFailed] Custom handler, that is invoked if authorization failes.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function Authorize(authorize: AuthorizeHandler, roles: string | string[], resources: string | string[], onAuthorizeFailed?: AuthorizeFailedHandler): DecoratorFunction;
 /**
@@ -185,7 +185,7 @@ export function Authorize(authorize: AuthorizeHandler, roles: string | string[],
  *
  * @param {AuthorizeOptions} [opts] The custom options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function Authorize(opts?: AuthorizeOptions): DecoratorFunction;
 export function Authorize(
@@ -203,7 +203,7 @@ export function Authorize(
  * @param {Controller} controller The controller.
  * @param {Function} method The underlying router method.
  *
- * @return {express.RequestHandler} The created middle.
+ * @returns {express.RequestHandler} The created middle.
  */
 export function createRouteAuthorizer(
     controller: Controller, method: Function
@@ -293,7 +293,7 @@ export function createRouteAuthorizer(
 /**
  * Returns the global handler, that is invoked if authorization of a request fails.
  *
- * @return {AuthorizeFailedHandler} The handler.
+ * @returns {AuthorizeFailedHandler} The handler.
  */
 export function getAuthorizeFailedHandler(): AuthorizeFailedHandler {
     return authorizationFailedHandler;
@@ -302,7 +302,7 @@ export function getAuthorizeFailedHandler(): AuthorizeFailedHandler {
 /**
  * Returns the global handler, that authorized requests.
  *
- * @return {AuthorizeHandler} The handler.
+ * @returns {AuthorizeHandler} The handler.
  */
 export function getAuthorizeHandler(): AuthorizeHandler {
     return authorizationHandler;

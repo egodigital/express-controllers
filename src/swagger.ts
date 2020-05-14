@@ -299,7 +299,7 @@ let swaggerPathDefinitionUpdater: SwaggerPathDefinitionUpdater;
  * @param {SwaggerPathDefinition} pathDefinition The path definition.
  * @param {SwaggerOptions} [opts] Custom and additional options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function Swagger(pathDefinition: SwaggerPathDefinition, opts?: SwaggerOptions): DecoratorFunction;
 /**
@@ -308,7 +308,7 @@ export function Swagger(pathDefinition: SwaggerPathDefinition, opts?: SwaggerOpt
  * @param {SwaggerPathDefinition} pathDefinition The path definition.
  * @param {SwaggerPathDefinitionUpdater} pathDefinitionUpdater A function that updates path definitions.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function Swagger(pathDefinition: SwaggerPathDefinition, pathDefinitionUpdater: SwaggerPathDefinitionUpdater): DecoratorFunction;
 /**
@@ -317,7 +317,7 @@ export function Swagger(pathDefinition: SwaggerPathDefinition, pathDefinitionUpd
  * @param {SwaggerPathDefinitionUpdater} pathDefinitionUpdater A function that updates path definitions.
  * @param {SwaggerPathDefinition} pathDefinition The path definition.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function Swagger(pathDefinitionUpdater: SwaggerPathDefinitionUpdater, pathDefinition: SwaggerPathDefinition): DecoratorFunction;
 export function Swagger(...args: any[]): DecoratorFunction {
@@ -332,7 +332,7 @@ export function Swagger(...args: any[]): DecoratorFunction {
 /**
  * Returns the global function, for updating Swagger path definitions.
  *
- * @return {SwaggerPathDefinitionUpdater} The handler.
+ * @returns {SwaggerPathDefinitionUpdater} The handler.
  */
 export function getSwaggerPathDefinitionUpdater(): SwaggerPathDefinitionUpdater {
     return swaggerPathDefinitionUpdater;

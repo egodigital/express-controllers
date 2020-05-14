@@ -30,7 +30,7 @@ interface HandledSerializedValues {
  *
  * @param {any} val The value to serialize.
  *
- * @return {Promise<any>} The promise with the serialized value.
+ * @returns {Promise<any>} The promise with the serialized value.
  */
 export async function serializeForJSON(val: any): Promise<any> {
     return serializeForJSONInner(

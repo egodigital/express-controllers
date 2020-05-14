@@ -24,7 +24,7 @@ import * as joi from 'joi';
  *
  * @param {T|T[]} val The input value.
  *
- * @return {T[]} The output value.
+ * @returns {T[]} The output value.
  */
 export function asArray<T>(val: T | T[]): T[] {
     if (!Array.isArray(val)) {
@@ -41,7 +41,7 @@ export function asArray<T>(val: T | T[]): T[] {
  * @param {T} y The second value.
  * @param {Function} selector The function, that selects the value to compare.
  *
- * @return {number} The soirt value.
+ * @returns {number} The soirt value.
  */
 export function compareValuesBy<T, V>(x: T, y: T, selector: (i: T) => V): number {
     const VAL_X = selector(x);
@@ -65,7 +65,7 @@ export function compareValuesBy<T, V>(x: T, y: T, selector: (i: T) => V): number
  *
  * @param {any} val The value to check.
  *
- * @return {boolean} Is empty string ('') or not.
+ * @returns {boolean} Is empty string ('') or not.
  */
 export function isEmptyString(val: any): boolean {
     return '' === normalizeString(val);
@@ -76,7 +76,7 @@ export function isEmptyString(val: any): boolean {
  *
  * @param {any} val The value to check.
  *
- * @return {boolean} Is joi object or not.
+ * @returns {boolean} Is joi object or not.
  */
 export function isJoi<TObj extends joi.JoiObject = joi.AnySchema>(val: any): val is TObj {
     if (!_.isNil(val)) {
@@ -91,7 +91,7 @@ export function isJoi<TObj extends joi.JoiObject = joi.AnySchema>(val: any): val
  *
  * @param {any} val The input value.
  *
- * @return {string} The output value.
+ * @returns {string} The output value.
  */
 export function normalizeString(val: any): string {
     return toStringSafe(val)
@@ -104,7 +104,7 @@ export function normalizeString(val: any): string {
  *
  * @param {NodeJS.ReadStream} stream The stream to read.
  *
- * @return Promise<Buffer> The promise with the read data.
+ * @returns Promise<Buffer> The promise with the read data.
  */
 export function readAll(stream: NodeJS.ReadStream): Promise<Buffer> {
     return new Promise<Buffer>((resolve, reject) => {
@@ -153,7 +153,7 @@ export function readAll(stream: NodeJS.ReadStream): Promise<Buffer> {
  * @param {any} val The input value.
  * @param {boolean} [defaultValue] The custom default value.
  *
- * @return {string} The output value.
+ * @returns {string} The output value.
  */
 export function toBooleanSafe(val: any, defaultValue: boolean = false): boolean {
     if (_.isNil(val)) {
@@ -168,7 +168,7 @@ export function toBooleanSafe(val: any, defaultValue: boolean = false): boolean 
  *
  * @param {any} val The input value.
  *
- * @return {string} The output value.
+ * @returns {string} The output value.
  */
 export function toStringSafe(val: any): string {
     if (_.isString(val)) {

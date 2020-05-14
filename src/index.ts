@@ -127,7 +127,7 @@ export interface Controller<TApp extends any = ExpressApp> {
  * @param {string} file The underyling class file (relative path).
  * @param {string} fullPath The underyling class file (full path).
  *
- * @return {string} The class name.
+ * @returns {string} The class name.
  */
 export type ControllerClassNameProvider =
     (file: string, fullPath: string) => string;
@@ -140,7 +140,7 @@ export type ControllerClassNameProvider =
  * @param {express.Router} router The underlying Express for the controller instance.
  * @param {string} file The underlying file.
  *
- * @return {ArrayLike<any>} The list of constructors.
+ * @returns {ArrayLike<any>} The list of constructors.
  */
 export type ControllerClassConstructorArgsProvider =
     (
@@ -176,7 +176,7 @@ export type ControllerCreatedEventHandler<TApp extends any = ExpressApp> =
  *
  * @param {string} file The full path of the file to check.
  *
- * @return {boolean} Handle / include file or not.
+ * @returns {boolean} Handle / include file or not.
  */
 export type ControllerFileFilter = (file: string) => boolean;
 
@@ -549,7 +549,7 @@ export abstract class ControllerBase<TApp extends any = ExpressApp> implements C
  *
  * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function CONNECT(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
 /**
@@ -560,7 +560,7 @@ export function CONNECT(opts?: ControllerRouteWithBodyOptions): DecoratorFunctio
  * @param {joi.AnySchema} [schema] The optional schema to use.
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function CONNECT(path: RouterPath, schema?: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -572,7 +572,7 @@ export function CONNECT(path: RouterPath, schema?: joi.AnySchema, onValidationFa
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function CONNECT(path: RouterPath, schema?: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -581,7 +581,7 @@ export function CONNECT(path: RouterPath, schema?: joi.AnySchema, format?: BodyF
  * @param {joi.AnySchema} schema The schema to use.
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function CONNECT(schema: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -592,7 +592,7 @@ export function CONNECT(schema: joi.AnySchema, onValidationFailed?: ObjectValida
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function CONNECT(schema: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 export function CONNECT(...args: any[]): DecoratorFunction {
@@ -609,7 +609,7 @@ export function CONNECT(...args: any[]): DecoratorFunction {
  *
  * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function DELETE(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
 /**
@@ -619,7 +619,7 @@ export function DELETE(opts?: ControllerRouteWithBodyOptions): DecoratorFunction
  * @param {RouterPath} path The custom path to use.
  * @param {joi.AnySchema} [schema] The optional schema to use.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function DELETE(path: RouterPath, schema?: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -631,7 +631,7 @@ export function DELETE(path: RouterPath, schema?: joi.AnySchema, onValidationFai
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function DELETE(path: RouterPath, schema?: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -639,7 +639,7 @@ export function DELETE(path: RouterPath, schema?: joi.AnySchema, format?: BodyFo
  *
  * @param {joi.AnySchema} schema The schema to use.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function DELETE(schema: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -650,7 +650,7 @@ export function DELETE(schema: joi.AnySchema, onValidationFailed?: ObjectValidat
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function DELETE(schema: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 export function DELETE(...args: any[]): DecoratorFunction {
@@ -667,7 +667,7 @@ export function DELETE(...args: any[]): DecoratorFunction {
  *
  * @param {ControllerRouteOptions} [opts] The custom options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function GET(opts?: ControllerRouteOptions): DecoratorFunction;
 /**
@@ -676,7 +676,7 @@ export function GET(opts?: ControllerRouteOptions): DecoratorFunction;
  *
  * @param {RouterPath} path The custom path to use.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function GET(path: RouterPath): DecoratorFunction;
 export function GET(...args: any[]): DecoratorFunction {
@@ -693,7 +693,7 @@ export function GET(...args: any[]): DecoratorFunction {
  *
  * @param {ControllerRouteOptions} [opts] The custom options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function HEAD(opts?: ControllerRouteOptions): DecoratorFunction;
 /**
@@ -702,7 +702,7 @@ export function HEAD(opts?: ControllerRouteOptions): DecoratorFunction;
  *
  * @param {RouterPath} path The custom path to use.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function HEAD(path: RouterPath): DecoratorFunction;
 export function HEAD(...args: any[]): DecoratorFunction {
@@ -719,7 +719,7 @@ export function HEAD(...args: any[]): DecoratorFunction {
  *
  * @param {ControllerRouteOptions} [opts] The custom options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function OPTIONS(opts?: ControllerRouteOptions): DecoratorFunction;
 /**
@@ -728,7 +728,7 @@ export function OPTIONS(opts?: ControllerRouteOptions): DecoratorFunction;
  *
  * @param {RouterPath} path The custom path to use.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function OPTIONS(path: RouterPath): DecoratorFunction;
 export function OPTIONS(...args: any[]): DecoratorFunction {
@@ -745,7 +745,7 @@ export function OPTIONS(...args: any[]): DecoratorFunction {
  *
  * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function PATCH(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
 /**
@@ -756,7 +756,7 @@ export function PATCH(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
  * @param {joi.AnySchema} [schema] The optional schema to use.
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function PATCH(path: RouterPath, schema?: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -768,7 +768,7 @@ export function PATCH(path: RouterPath, schema?: joi.AnySchema, onValidationFail
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function PATCH(path: RouterPath, schema?: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -777,7 +777,7 @@ export function PATCH(path: RouterPath, schema?: joi.AnySchema, format?: BodyFor
  * @param {joi.AnySchema} schema The schema to use.
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function PATCH(schema: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -788,7 +788,7 @@ export function PATCH(schema: joi.AnySchema, onValidationFailed?: ObjectValidati
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function PATCH(schema: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 export function PATCH(...args: any[]): DecoratorFunction {
@@ -805,7 +805,7 @@ export function PATCH(...args: any[]): DecoratorFunction {
  *
  * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function POST(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
 /**
@@ -816,7 +816,7 @@ export function POST(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
  * @param {joi.AnySchema} [schema] The optional schema to use.
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function POST(path: RouterPath, schema?: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -828,7 +828,7 @@ export function POST(path: RouterPath, schema?: joi.AnySchema, onValidationFaile
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function POST(path: RouterPath, schema?: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -837,7 +837,7 @@ export function POST(path: RouterPath, schema?: joi.AnySchema, format?: BodyForm
  * @param {joi.AnySchema} schema The schema to use.
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function POST(schema: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -848,7 +848,7 @@ export function POST(schema: joi.AnySchema, onValidationFailed?: ObjectValidatio
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function POST(schema: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 export function POST(...args: any[]): DecoratorFunction {
@@ -865,7 +865,7 @@ export function POST(...args: any[]): DecoratorFunction {
  *
  * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function PUT(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
 /**
@@ -876,7 +876,7 @@ export function PUT(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
  * @param {joi.AnySchema} [schema] The optional schema to use.
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function PUT(path: RouterPath, schema?: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -888,7 +888,7 @@ export function PUT(path: RouterPath, schema?: joi.AnySchema, onValidationFailed
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function PUT(path: RouterPath, schema?: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -897,7 +897,7 @@ export function PUT(path: RouterPath, schema?: joi.AnySchema, format?: BodyForma
  * @param {joi.AnySchema} schema The schema to use.
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function PUT(schema: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -908,7 +908,7 @@ export function PUT(schema: joi.AnySchema, onValidationFailed?: ObjectValidation
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function PUT(schema: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 export function PUT(...args: any[]): DecoratorFunction {
@@ -925,7 +925,7 @@ export function PUT(...args: any[]): DecoratorFunction {
  *
  * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function TRACE(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
 /**
@@ -936,7 +936,7 @@ export function TRACE(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
  * @param {joi.AnySchema} [schema] The optional schema to use.
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function TRACE(path: RouterPath, schema?: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -948,7 +948,7 @@ export function TRACE(path: RouterPath, schema?: joi.AnySchema, onValidationFail
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function TRACE(path: RouterPath, schema?: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -957,7 +957,7 @@ export function TRACE(path: RouterPath, schema?: joi.AnySchema, format?: BodyFor
  * @param {joi.AnySchema} schema The schema to use.
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function TRACE(schema: joi.AnySchema, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 /**
@@ -968,7 +968,7 @@ export function TRACE(schema: joi.AnySchema, onValidationFailed?: ObjectValidati
  * @param {BodyFormat} [format] The custom input format. Default: 'JSON'
  * @param {ObjectValidationFailedHandler} [onValidationFailed] The optional, custom handler, that is invoked if a (schema) validation failed.
  *
- * @return {DecoratorFunction} The decorator function.
+ * @returns {DecoratorFunction} The decorator function.
  */
 export function TRACE(schema: joi.AnySchema, format?: BodyFormat, onValidationFailed?: ObjectValidationFailedHandler): DecoratorFunction;
 export function TRACE(...args: any[]): DecoratorFunction {
@@ -984,7 +984,7 @@ export function TRACE(...args: any[]): DecoratorFunction {
 /**
  * Returns the global handler, that is invoked after a controller method.
  *
- * @return {AfterRequestHandler<TRequest>} The handler.
+ * @returns {AfterRequestHandler<TRequest>} The handler.
  */
 export function getAfterRequestHandler<TRequest extends express.Request = express.Request>(): AfterRequestHandler<TRequest> {
     return afterRequestHandler;
@@ -993,7 +993,7 @@ export function getAfterRequestHandler<TRequest extends express.Request = expres
 /**
  * Returns the global handler, if an object validation fails.
  *
- * @return {ObjectValidationFailedHandler} The handler.
+ * @returns {ObjectValidationFailedHandler} The handler.
  */
 export function getObjectValidationFailedHandler(): ObjectValidationFailedHandler {
     let handler: ObjectValidationFailedHandler = objValidateFailedHandler;
@@ -1022,7 +1022,7 @@ export function getObjectValidationFailedHandler(): ObjectValidationFailedHandle
 /**
  * Returns the global error handler, if a request fails.
  *
- * @return {RequestErrorHandler} The handler.
+ * @returns {RequestErrorHandler} The handler.
  */
 export function getRequestErrorHandler(): RequestErrorHandler {
     let handler: RequestErrorHandler = reqErrorHandler;
@@ -1040,7 +1040,7 @@ export function getRequestErrorHandler(): RequestErrorHandler {
 /**
  * Returns the global response serializer.
  *
- * @return {ResponseSerializer|null|undefined} The serializer, if defined.
+ * @returns {ResponseSerializer|null|undefined} The serializer, if defined.
  */
 export function getResponseSerializer(): ResponseSerializer | null | undefined {
     return resSerializer;
