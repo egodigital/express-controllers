@@ -20,7 +20,7 @@ import * as express from 'express';
 import * as swaggerUi from 'swagger-ui-express';
 import * as yaml from 'js-yaml';
 import { AUTHORIZER_OPTIONS } from './authorize';
-import { Controller, DecoratorFunction, REQUEST_VALIDATORS, ExpressApp } from './index';
+import { DecoratorFunction, IController, REQUEST_VALIDATORS, ExpressApp } from './index';
 import { asArray, compareValuesBy, isEmptyString, normalizeString, toBooleanSafe, toStringSafe } from './utils';
 
 /**
@@ -31,7 +31,7 @@ export type ApiUrlScheme = 'http' | 'https';
 /**
  * General information of a Swagger document.
  */
-export interface InitControllersSwaggerDocumentOptions {
+export interface IInitControllersSwaggerDocumentOptions {
     /**
      * The base path of the API.
      */
@@ -39,7 +39,7 @@ export interface InitControllersSwaggerDocumentOptions {
     /**
      * External docs.
      */
-    externalDocs?: SwaggerExternalDocs;
+    externalDocs?: ISwaggerExternalDocs;
     /**
      * The host name.
      */
@@ -47,7 +47,7 @@ export interface InitControllersSwaggerDocumentOptions {
     /**
      * Information about the document.
      */
-    info?: SwaggerDocumentInfo;
+    info?: ISwaggerDocumentInfo;
     /**
      * The list of possible schemes.
      */
@@ -69,7 +69,7 @@ export interface InitControllersSwaggerDocumentOptions {
 /**
  * 'swagger' extension for options of 'initControllers()' function.
  */
-export interface InitControllersSwaggerOptions {
+export interface IInitControllersSwaggerOptions {
     /**
      * Support download of YAML and JSON files or not. Default: (true)
      */
@@ -87,7 +87,7 @@ export interface InitControllersSwaggerOptions {
     /**
      * General document information.
      */
-    document?: InitControllersSwaggerDocumentOptions;
+    document?: IInitControllersSwaggerDocumentOptions;
     /**
      * Custom Favicon for the UI.
      */
@@ -115,23 +115,16 @@ export interface InitControllersSwaggerOptions {
  *
  * (false) indicates NOT to setup Swagger UI.
  */
-export type InitControllersSwaggerOptionsValue = InitControllersSwaggerOptions | false;
-
-/**
- * List of Swagger definitions.
- */
-export type SwaggerDefinitionList = {
-    [key: string]: any;
-};
+export type InitControllersSwaggerOptionsValue = IInitControllersSwaggerOptions | false;
 
 /**
  * Information of a Swagger document.
  */
-export interface SwaggerDocumentInfo {
+export interface ISwaggerDocumentInfo {
     /**
      * Contact information.
      */
-    contact?: SwaggerDocumentInfoContact;
+    contact?: ISwaggerDocumentInfoContact;
     /**
      * API description.
      */
@@ -139,7 +132,7 @@ export interface SwaggerDocumentInfo {
     /**
      * License information.
      */
-    license?: SwaggerDocumentInfoLicense;
+    license?: ISwaggerDocumentInfoLicense;
     /**
      * Version.
      */
@@ -153,7 +146,7 @@ export interface SwaggerDocumentInfo {
 /**
  * Contact information in the 'info' block of a Swagger document.
  */
-export interface SwaggerDocumentInfoContact {
+export interface ISwaggerDocumentInfoContact {
     /**
      * The email address.
      */
@@ -171,7 +164,7 @@ export interface SwaggerDocumentInfoContact {
 /**
  * License information in the 'info' block of a Swagger document.
  */
-export interface SwaggerDocumentInfoLicense {
+export interface ISwaggerDocumentInfoLicense {
     /**
      * The display name of the license.
      */
@@ -185,7 +178,7 @@ export interface SwaggerDocumentInfoLicense {
 /**
  * Swagger external documentation information.
  */
-export interface SwaggerExternalDocs {
+export interface ISwaggerExternalDocs {
     /**
      * A description.
      */
@@ -199,11 +192,11 @@ export interface SwaggerExternalDocs {
 /**
  * Information for generating a Swagger document (path definition).
  */
-export interface SwaggerInfo {
+export interface ISwaggerInfo {
     /**
      * The underlying controller.
      */
-    controller?: Controller<unknown>;
+    controller?: IController<unknown>;
     /**
      * The underlying controller method.
      */
@@ -225,7 +218,7 @@ export interface SwaggerInfo {
     /**
      * Custom options.
      */
-    options?: SwaggerOptions;
+    options?: ISwaggerOptions;
     /**
      * The path definition.
      */
@@ -235,7 +228,7 @@ export interface SwaggerInfo {
 /**
  * Additional, custom options for 'Swagger()' decorator.
  */
-export interface SwaggerOptions {
+export interface ISwaggerOptions {
     /**
      * A function that updates swagger path definitions.
      */
@@ -243,22 +236,9 @@ export interface SwaggerOptions {
 }
 
 /**
- * A swagger path definition.
- */
-export type SwaggerPathDefinition = any;
-
-/**
- * Updates a Swagger path definition.
- *
- * @param {SwaggerPathDefinitionUpdaterContext} context The context.
- */
-export type SwaggerPathDefinitionUpdater =
-    (context: SwaggerPathDefinitionUpdaterContext) => any;
-
-/**
  * An execution context for a 'SwaggerPathDefinitionUpdater' function.
  */
-export interface SwaggerPathDefinitionUpdaterContext {
+export interface ISwaggerPathDefinitionUpdaterContext {
     /**
      * The path definition to update.
      */
@@ -282,6 +262,26 @@ export interface SwaggerPathDefinitionUpdaterContext {
 }
 
 /**
+ * List of Swagger definitions.
+ */
+export type SwaggerDefinitionList = {
+    [key: string]: any;
+};
+
+/**
+ * A swagger path definition.
+ */
+export type SwaggerPathDefinition = any;
+
+/**
+ * Updates a Swagger path definition.
+ *
+ * @param {ISwaggerPathDefinitionUpdaterContext} context The context.
+ */
+export type SwaggerPathDefinitionUpdater =
+    (context: ISwaggerPathDefinitionUpdaterContext) => any;
+
+/**
  * A security defintion.
  */
 export type SwaggerSecurityDefintion = { [name: string]: any[] };
@@ -297,11 +297,11 @@ let swaggerPathDefinitionUpdater: SwaggerPathDefinitionUpdater;
  * Defines a Swagger definition for a controller method.
  *
  * @param {SwaggerPathDefinition} pathDefinition The path definition.
- * @param {SwaggerOptions} [opts] Custom and additional options.
+ * @param {ISwaggerOptions} [opts] Custom and additional options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function Swagger(pathDefinition: SwaggerPathDefinition, opts?: SwaggerOptions): DecoratorFunction;
+export function Swagger(pathDefinition: SwaggerPathDefinition, opts?: ISwaggerOptions): DecoratorFunction;
 /**
  * Defines a Swagger definition for a controller method.
  *
@@ -358,13 +358,13 @@ export function setSwaggerPathDefinitionUpdater(
  */
 export function setupSwaggerUI(
     app: ExpressApp, optsOrFalse: InitControllersSwaggerOptionsValue,
-    infos: SwaggerInfo[],
+    infos: ISwaggerInfo[],
 ) {
     if (false === optsOrFalse) {
         return;
     }
 
-    let opts = optsOrFalse as InitControllersSwaggerOptions;
+    let opts = optsOrFalse as IInitControllersSwaggerOptions;
 
     if (_.isNil(opts)) {
         opts = {} as any;
@@ -527,7 +527,7 @@ export function setupSwaggerUI(
                             }
 
                             if (pathDefinitionUpdater) {
-                                const UPDATER_CTX: SwaggerPathDefinitionUpdaterContext = {
+                                const UPDATER_CTX: ISwaggerPathDefinitionUpdaterContext = {
                                     definition: pathDefinition,
                                     doesValidate: !!asArray(si.controllerMethod[REQUEST_VALIDATORS]).length,
                                     hasAuthorize: !_.isNil(si.controllerMethod[AUTHORIZER_OPTIONS]),
@@ -615,8 +615,8 @@ export function setupSwaggerUI(
 }
 
 
-function toSwaggerInfo(args: any[]): SwaggerInfo {
-    const INFO: SwaggerInfo = {
+function toSwaggerInfo(args: any[]): ISwaggerInfo {
+    const INFO: ISwaggerInfo = {
         groupedRouterMethods: {},
         pathDefinition: undefined
     };
@@ -644,9 +644,9 @@ function toSwaggerInfo(args: any[]): SwaggerInfo {
                     pathDefinitionUpdater: args[1] as SwaggerPathDefinitionUpdater
                 };
             } else {
-                // [1] opts?: SwaggerOptions
+                // [1] opts?: ISwaggerOptions
 
-                INFO.options = args[1] as SwaggerOptions;
+                INFO.options = args[1] as ISwaggerOptions;
             }
         }
     }

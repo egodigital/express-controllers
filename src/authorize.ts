@@ -17,59 +17,29 @@
 
 import * as _ from 'lodash';
 import * as express from 'express';
-import { Controller, DecoratorFunction } from './index';
+import { DecoratorFunction, IController } from './index';
 import { asArray, toBooleanSafe, toStringSafe } from './utils';
 
 /**
  * A handler, that is invoked, if authorization failed.
  *
- * @param {AuthorizeFailedHandlerContext<TRequest>} context The context.
+ * @param {IAuthorizeFailedHandlerContext<TRequest>} context The context.
  */
-export type AuthorizeFailedHandler<TRequest extends express.Request = express.Request> = (context: AuthorizeFailedHandlerContext<TRequest>) => any;
-
-/**
- * The context for a handler, that is invoked, if authorization failed.
- */
-export interface AuthorizeFailedHandlerContext<TRequest extends express.Request = express.Request> {
-    /**
-     * The reason from authorization handler.
-     */
-    reason?: any;
-    /**
-     * The current HTTP request context.
-     */
-    request: TRequest;
-    /**
-     * The list of resources to check.
-     */
-    resources: string[];
-    /**
-     * The current HTTP response context.
-     */
-    response: express.Response;
-    /**
-     * The result of the underlying handler.
-     */
-    result: AuthorizeHandlerResult;
-    /**
-     * The list of roles to check.
-     */
-    roles: string[];
-}
+export type AuthorizeFailedHandler<TRequest extends express.Request = express.Request> = (context: IAuthorizeFailedHandlerContext<TRequest>) => any;
 
 /**
  * An authorization handler.
  *
- * @param {AuthorizeHandlerContext<TRequest>} context The context.
+ * @param {IAuthorizeHandlerContext<TRequest>} context The context.
  *
  * @returns {AuthorizeHandlerResult|PromiseLike<AuthorizeHandlerResult>} The result.
  */
-export type AuthorizeHandler<TRequest extends express.Request = express.Request> = (context: AuthorizeHandlerContext<TRequest>) => AuthorizeHandlerResult | PromiseLike<AuthorizeHandlerResult>;
+export type AuthorizeHandler<TRequest extends express.Request = express.Request> = (context: IAuthorizeHandlerContext<TRequest>) => AuthorizeHandlerResult | PromiseLike<AuthorizeHandlerResult>;
 
 /**
  * The (execution) context of an authorization handler.
  */
-export interface AuthorizeHandlerContext<TRequest extends express.Request = express.Request> {
+export interface IAuthorizeHandlerContext<TRequest extends express.Request = express.Request> {
     /**
      * Gets or sets an optional object or value,
      * which describes why the authorization failed.
@@ -101,9 +71,39 @@ export interface AuthorizeHandlerContext<TRequest extends express.Request = expr
 export type AuthorizeHandlerResult = boolean | void | null | undefined | string;
 
 /**
+ * The context for a handler, that is invoked, if authorization failed.
+ */
+export interface IAuthorizeFailedHandlerContext<TRequest extends express.Request = express.Request> {
+    /**
+     * The reason from authorization handler.
+     */
+    reason?: any;
+    /**
+     * The current HTTP request context.
+     */
+    request: TRequest;
+    /**
+     * The list of resources to check.
+     */
+    resources: string[];
+    /**
+     * The current HTTP response context.
+     */
+    response: express.Response;
+    /**
+     * The result of the underlying handler.
+     */
+    result: AuthorizeHandlerResult;
+    /**
+     * The list of roles to check.
+     */
+    roles: string[];
+}
+
+/**
  * Options for an @Authorize decorator.
  */
-export interface AuthorizeOptions {
+export interface IAuthorizeOptions {
     /**
      * The custom authorization handler.
      */
@@ -183,11 +183,11 @@ export function Authorize(authorize: AuthorizeHandler, roles: string | string[],
 /**
  * Sets up a controller method for authorization.
  *
- * @param {AuthorizeOptions} [opts] The custom options.
+ * @param {IAuthorizeOptions} [opts] The custom options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function Authorize(opts?: AuthorizeOptions): DecoratorFunction;
+export function Authorize(opts?: IAuthorizeOptions): DecoratorFunction;
 export function Authorize(
     ...args: any[]
 ): DecoratorFunction {
@@ -200,16 +200,16 @@ export function Authorize(
 /**
  * Creates a middleware for handling an 'Authorize()' decorator, if defined.
  *
- * @param {Controller} controller The controller.
+ * @param {IController} controller The controller.
  * @param {Function} method The underlying router method.
  *
  * @returns {express.RequestHandler} The created middle.
  */
 export function createRouteAuthorizer(
-    controller: Controller, method: Function
+    controller: IController, method: Function
 ): express.RequestHandler {
     return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        const OPTS: AuthorizeOptions = method[AUTHORIZER_OPTIONS];
+        const OPTS: IAuthorizeOptions = method[AUTHORIZER_OPTIONS];
         if (!_.isNil(OPTS)) {
             let authorizer: AuthorizeHandler = OPTS.authorize;
             if (_.isNil(authorizer)) {
@@ -220,7 +220,7 @@ export function createRouteAuthorizer(
             }
 
             if (!_.isNil(authorizer)) {
-                const AUTHORIZE_CTX: AuthorizeHandlerContext = {
+                const AUTHORIZE_CTX: IAuthorizeHandlerContext = {
                     reason: undefined,
                     request: req,
                     response: res,
@@ -259,7 +259,7 @@ export function createRouteAuthorizer(
                     if (_.isNil(failedHandler)) {
                         // default
 
-                        failedHandler = async (ctx) => {
+                        failedHandler = (ctx) => {
                             if (_.isString(ctx.result)) {
                                 return ctx.response.status(403)
                                     .send(ctx.result.trim());
@@ -270,7 +270,7 @@ export function createRouteAuthorizer(
                         };
                     }
 
-                    const AUTHORIZE_FAILED_CTX: AuthorizeFailedHandlerContext = {
+                    const AUTHORIZE_FAILED_CTX: IAuthorizeFailedHandlerContext = {
                         reason: AUTHORIZE_CTX.reason,
                         request: req,
                         response: res,
@@ -331,8 +331,8 @@ export function setAuthorizeHandler(
 }
 
 
-function toAuthorizeOptions(args: any[]): AuthorizeOptions {
-    let opts: AuthorizeOptions = {} as any;
+function toAuthorizeOptions(args: any[]): IAuthorizeOptions {
+    let opts: IAuthorizeOptions = {} as any;
 
     if (args.length) {
         const FIRST_ARG = args[0];
@@ -342,9 +342,9 @@ function toAuthorizeOptions(args: any[]): AuthorizeOptions {
             !_.isArray(FIRST_ARG) &&
             !_.isString(FIRST_ARG)
         ) {
-            // [0] opts: AuthorizeOptions
+            // [0] opts: IAuthorizeOptions
 
-            opts = FIRST_ARG as AuthorizeOptions;
+            opts = FIRST_ARG as IAuthorizeOptions;
         } else {
             if (_.isFunction(FIRST_ARG)) {
                 // [0] authorize: AuthorizeHandler

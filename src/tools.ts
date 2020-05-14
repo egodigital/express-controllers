@@ -20,7 +20,7 @@ import * as isStream from 'is-stream';
 import * as moment from 'moment';
 import { readAll } from './utils';
 
-interface HandledSerializedValues {
+interface IHandledSerializedValues {
     serialized: any;
     value: any;
 }
@@ -32,14 +32,14 @@ interface HandledSerializedValues {
  *
  * @returns {Promise<any>} The promise with the serialized value.
  */
-export async function serializeForJSON(val: any): Promise<any> {
+export function serializeForJSON(val: any): Promise<any> {
     return serializeForJSONInner(
         val, []
     );
 }
 
 async function serializeForJSONInner(
-    val: any, handledValues: HandledSerializedValues[],
+    val: any, handledValues: IHandledSerializedValues[],
     depth: number = 0
 ): Promise<any> {
     if (depth > 63) {
@@ -99,7 +99,7 @@ async function serializeForJSONInner(
         );
     }
 
-    const FIND_HANDLED_INSTANCE = async (v: any): Promise<HandledSerializedValues> => {
+    const FIND_HANDLED_INSTANCE = async (v: any): Promise<IHandledSerializedValues> => {
         if (_.isNil(v)) {
             return {
                 serialized: v,
@@ -114,7 +114,7 @@ async function serializeForJSONInner(
         }
 
         // new
-        const NEW_VALUE: HandledSerializedValues = {
+        const NEW_VALUE: IHandledSerializedValues = {
             serialized: await serializeForJSONInner(v, handledValues),
             value: v
         };

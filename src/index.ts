@@ -21,7 +21,7 @@ import * as fastGlob from 'fast-glob';
 import * as joi from 'joi';
 import * as path from 'path';
 import { AuthorizeHandler, AuthorizeFailedHandler, createRouteAuthorizer } from './authorize';
-import { InitControllersSwaggerOptionsValue, setupSwaggerUI, SwaggerInfo, SwaggerPathDefinitionUpdater, SWAGGER_INFO } from './swagger';
+import { InitControllersSwaggerOptionsValue, ISwaggerInfo, setupSwaggerUI, SwaggerPathDefinitionUpdater, SWAGGER_INFO } from './swagger';
 import { asArray, compareValuesBy, isEmptyString, isJoi, normalizeString, toBooleanSafe, toStringSafe } from './utils';
 
 
@@ -31,12 +31,87 @@ import { asArray, compareValuesBy, isEmptyString, isJoi, normalizeString, toBool
  * @param {AfterRequestHandlerContext<TRequest>} context The context.
  */
 export type AfterRequestHandler<TRequest extends express.Request = express.Request> =
-    (context: AfterRequestHandlerContext<TRequest>) => any;
+    (context: IAfterRequestHandlerContext<TRequest>) => any;
+
+/**
+ * A function that provides the name for a controller class.
+ *
+ * @param {string} file The underyling class file (relative path).
+ * @param {string} fullPath The underyling class file (full path).
+ *
+ * @returns {string} The class name.
+ */
+export type ControllerClassNameProvider =
+    (file: string, fullPath: string) => string;
+
+/**
+ * A function that provides the arguments for the constructor of a controller class.
+ *
+ * @param {ExpressApp} app The underlying Express app / the router.
+ * @param {string} routePath The route path.
+ * @param {express.Router} router The underlying Express for the controller instance.
+ * @param {string} file The underlying file.
+ *
+ * @returns {ArrayLike<any>} The list of constructors.
+ */
+export type ControllerClassConstructorArgsProvider =
+    (
+        app: ExpressApp,
+        routePath: string,
+        router: express.Router,
+        file: string,
+    ) => ArrayLike<any>;
+
+/**
+ * A handler, that is invoked, after a controller instance has been created.
+ */
+export type ControllerCreatedEventHandler<TApp extends any = ExpressApp> =
+    (args: IControllerCreatedEventArguments<TApp>) => any;
+
+/**
+ * A preficate, which checks, if a controller (module) file
+ * should be included or not.
+ *
+ * @param {string} file The full path of the file to check.
+ *
+ * @returns {boolean} Handle / include file or not.
+ */
+export type ControllerFileFilter = (file: string) => boolean;
+
+/**
+ * Event handler, that is invoked, AFTER loading a file has been finished.
+ *
+ * @param {ControllerFileLoadedEventArguments} args The arguments.
+ */
+export type ControllerFileLoadedEventHandler =
+    (args: IControllerFileLoadedEventArguments) => void;
+
+/**
+ * Event handler, that is invoked, BEFORE loading a file is going to start.
+ *
+ * @param {IControllerFileLoadingEventArguments} args The arguments.
+ */
+export type ControllerFileLoadingEventHandler =
+    (args: IControllerFileLoadingEventArguments) => void;
+
+/**
+ * A decorator function.
+ *
+ * @param {any} target The target.
+ * @param {string} propertyName The (property) name.
+ * @param {PropertyDescriptor} propertyInfo The property information.
+ */
+export type DecoratorFunction = (target: any, propertyName: string, propertyInfo: PropertyDescriptor) => void;
+
+/**
+ * A possible value for an express app.
+ */
+export type ExpressApp = express.Express | express.Router;
 
 /**
  * A context for a handler, that is invoked after a controller method.
  */
-export interface AfterRequestHandlerContext<TRequest extends express.Request = express.Request> {
+export interface IAfterRequestHandlerContext<TRequest extends express.Request = express.Request> {
     /**
      * The error, if occurred.
      */
@@ -62,7 +137,7 @@ export interface AfterRequestHandlerContext<TRequest extends express.Request = e
 /**
  * Describes a controller.
  */
-export interface Controller<TApp extends any = ExpressApp> {
+export interface IController<TApp extends any = ExpressApp> {
     /**
      * The underlying app instance.
      */
@@ -122,42 +197,13 @@ export interface Controller<TApp extends any = ExpressApp> {
 }
 
 /**
- * A function that provides the name for a controller class.
- *
- * @param {string} file The underyling class file (relative path).
- * @param {string} fullPath The underyling class file (full path).
- *
- * @returns {string} The class name.
- */
-export type ControllerClassNameProvider =
-    (file: string, fullPath: string) => string;
-
-/**
- * A function that provides the arguments for the constructor of a controller class.
- *
- * @param {ExpressApp} app The underlying Express app / the router.
- * @param {string} routePath The route path.
- * @param {express.Router} router The underlying Express for the controller instance.
- * @param {string} file The underlying file.
- *
- * @returns {ArrayLike<any>} The list of constructors.
- */
-export type ControllerClassConstructorArgsProvider =
-    (
-        app: ExpressApp,
-        routePath: string,
-        router: express.Router,
-        file: string,
-    ) => ArrayLike<any>;
-
-/**
  * Arguments for a 'controller create' event handler.
  */
-export interface ControllerCreatedEventArguments<TApp extends any = ExpressApp> {
+export interface IControllerCreatedEventArguments<TApp extends any = ExpressApp> {
     /**
      * The created instance.
      */
-    controller: Controller<TApp>;
+    controller: IController<TApp>;
     /**
      * The file.
      */
@@ -165,25 +211,9 @@ export interface ControllerCreatedEventArguments<TApp extends any = ExpressApp> 
 }
 
 /**
- * A handler, that is invoked, after a controller instance has been created.
- */
-export type ControllerCreatedEventHandler<TApp extends any = ExpressApp> =
-    (args: ControllerCreatedEventArguments<TApp>) => any;
-
-/**
- * A preficate, which checks, if a controller (module) file
- * should be included or not.
- *
- * @param {string} file The full path of the file to check.
- *
- * @returns {boolean} Handle / include file or not.
- */
-export type ControllerFileFilter = (file: string) => boolean;
-
-/**
  * Arguments for a 'ControllerFileLoadedEventHandler' instance.
  */
-export interface ControllerFileLoadedEventArguments {
+export interface IControllerFileLoadedEventArguments {
     /**
      * The error (if occurred).
      */
@@ -195,17 +225,9 @@ export interface ControllerFileLoadedEventArguments {
 }
 
 /**
- * Event handler, that is invoked, AFTER loading a file has been finished.
- *
- * @param {ControllerFileLoadedEventArguments} args The arguments.
- */
-export type ControllerFileLoadedEventHandler =
-    (args: ControllerFileLoadedEventArguments) => void;
-
-/**
  * Arguments for a 'ControllerFileLoadingEventHandler' instance.
  */
-export interface ControllerFileLoadingEventArguments {
+export interface IControllerFileLoadingEventArguments {
     /**
      * The full path of the underlying file.
      */
@@ -213,17 +235,9 @@ export interface ControllerFileLoadingEventArguments {
 }
 
 /**
- * Event handler, that is invoked, BEFORE loading a file is going to start.
- *
- * @param {ControllerFileLoadingEventArguments} args The arguments.
- */
-export type ControllerFileLoadingEventHandler =
-    (args: ControllerFileLoadingEventArguments) => void;
-
-/**
  * Options for a controller route.
  */
-export interface ControllerRouteOptions<TRequest extends express.Request = express.Request> {
+export interface IControllerRouteOptions<TRequest extends express.Request = express.Request> {
     /**
      * A custom error handler for the route.
      */
@@ -249,7 +263,7 @@ export interface ControllerRouteOptions<TRequest extends express.Request = expre
 /**
  * Options for a controller route with a body.
  */
-export interface ControllerRouteWithBodyOptions extends ControllerRouteOptions {
+export interface IControllerRouteWithBodyOptions extends IControllerRouteOptions {
     /**
      * If validation is enabled, this defines the input format. Default: 'JSON'
      */
@@ -269,23 +283,9 @@ export interface ControllerRouteWithBodyOptions extends ControllerRouteOptions {
 }
 
 /**
- * A decorator function.
- *
- * @param {any} target The target.
- * @param {string} propertyName The (property) name.
- * @param {PropertyDescriptor} propertyInfo The property information.
- */
-export type DecoratorFunction = (target: any, propertyName: string, propertyInfo: PropertyDescriptor) => void;
-
-/**
- * A possible value for an express app.
- */
-export type ExpressApp = express.Express | express.Router;
-
-/**
  * Options for 'initControllers()' function.
  */
-export interface InitControllersOptions<TApp extends any = ExpressApp> {
+export interface IInitControllersOptions<TApp extends any = ExpressApp> {
     /**
      * The underlying Express host or router.
      */
@@ -334,17 +334,9 @@ export interface InitControllersOptions<TApp extends any = ExpressApp> {
 }
 
 /**
- * A function that returns the response for a failed JSON validation.
- *
- * @param {ObjectValidationFailedHandlerContext<TRequest>} context The context.
- */
-export type ObjectValidationFailedHandler<TRequest extends express.Request = express.Request> =
-    (context: ObjectValidationFailedHandlerContext<TRequest>) => any;
-
-/**
  * Context of a 'ObjectValidationFailedHandler'.
  */
-export interface ObjectValidationFailedHandlerContext<TRequest extends express.Request = express.Request> {
+export interface IObjectValidationFailedHandlerContext<TRequest extends express.Request = express.Request> {
     /**
      * The original value of the request body.
      */
@@ -370,7 +362,7 @@ export interface ObjectValidationFailedHandlerContext<TRequest extends express.R
 /**
  * Options for an object validator.
  */
-export interface ObjectValidatorOptions {
+export interface IObjectValidatorOptions {
     /**
      * Indicates if input body can be (null) or not.
      */
@@ -394,21 +386,9 @@ export interface ObjectValidatorOptions {
 }
 
 /**
- * A value for an object validator.
- */
-export type ObjectValidatorOptionsValue = ObjectValidatorOptions | joi.AnySchema;
-
-/**
- * Handles a request error.
- *
- * @param {RequestErrorHandlerContext<TRequest>} context The context.
- */
-export type RequestErrorHandler<TRequest extends express.Request = express.Request> = (context: RequestErrorHandlerContext<TRequest>) => any;
-
-/**
  * Context for 'RequestErrorHandler'.
  */
-export interface RequestErrorHandlerContext<TRequest extends express.Request = express.Request> {
+export interface IRequestErrorHandlerContext<TRequest extends express.Request = express.Request> {
     /**
      * The error.
      */
@@ -424,17 +404,9 @@ export interface RequestErrorHandlerContext<TRequest extends express.Request = e
 }
 
 /**
- * A function, that handles the result of a request handler, serializes it
- * and sends it to the requesting client.
- *
- * @param {ResponseSerializerContext<TRequest>} context The context.
- */
-export type ResponseSerializer<TRequest extends express.Request = express.Request> = (context: ResponseSerializerContext<TRequest>) => any;
-
-/**
  * The context for a 'ResponseSerializer'.
  */
-export interface ResponseSerializerContext<TRequest extends express.Request = express.Request> {
+export interface IResponseSerializerContext<TRequest extends express.Request = express.Request> {
     /**
      * The request context.
      */
@@ -449,16 +421,44 @@ export interface ResponseSerializerContext<TRequest extends express.Request = ex
     result: any;
 }
 
+interface IWrapHandlerForControllerOptions {
+    controller: IController;
+    handler: express.RequestHandler;
+    isControllerMethod?: boolean;
+}
+
+/**
+ * A function that returns the response for a failed JSON validation.
+ *
+ * @param {IObjectValidationFailedHandlerContext<TRequest>} context The context.
+ */
+export type ObjectValidationFailedHandler<TRequest extends express.Request = express.Request> =
+    (context: IObjectValidationFailedHandlerContext<TRequest>) => any;
+
+/**
+ * A value for an object validator.
+ */
+export type ObjectValidatorOptionsValue = IObjectValidatorOptions | joi.AnySchema;
+
+/**
+ * Handles a request error.
+ *
+ * @param {IRequestErrorHandlerContext<TRequest>} context The context.
+ */
+export type RequestErrorHandler<TRequest extends express.Request = express.Request> = (context: IRequestErrorHandlerContext<TRequest>) => any;
+
+/**
+ * A function, that handles the result of a request handler, serializes it
+ * and sends it to the requesting client.
+ *
+ * @param {IResponseSerializerContext<TRequest>} context The context.
+ */
+export type ResponseSerializer<TRequest extends express.Request = express.Request> = (context: IResponseSerializerContext<TRequest>) => any;
+
 /**
  * A value for a router path.
  */
 export type RouterPath = string | RegExp;
-
-interface WrapHandlerForControllerOptions {
-    controller: Controller;
-    handler: express.RequestHandler;
-    isControllerMethod?: boolean;
-}
 
 
 /**
@@ -508,7 +508,7 @@ let resSerializer: ResponseSerializer;
 /**
  * A basic controller.
  */
-export abstract class ControllerBase<TApp extends any = ExpressApp> implements Controller<TApp> {
+export abstract class ControllerBase<TApp extends any = ExpressApp> implements IController<TApp> {
     /**
      * Initializes a new instance of that class.
      *
@@ -547,11 +547,11 @@ export abstract class ControllerBase<TApp extends any = ExpressApp> implements C
 /**
  * Sets up a controller method for a CONNECT request.
  *
- * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
+ * @param {IControllerRouteWithBodyOptions} [opts] The custom options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function CONNECT(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
+export function CONNECT(opts?: IControllerRouteWithBodyOptions): DecoratorFunction;
 /**
  * Sets up a controller method for a CONNECT request
  * using a custom path and by optional validating a request body.
@@ -607,11 +607,11 @@ export function CONNECT(...args: any[]): DecoratorFunction {
 /**
  * Sets up a controller method for a DELETE request.
  *
- * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
+ * @param {IControllerRouteWithBodyOptions} [opts] The custom options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function DELETE(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
+export function DELETE(opts?: IControllerRouteWithBodyOptions): DecoratorFunction;
 /**
  * Sets up a controller method for a DELETE request
  * using a custom path and by optional validating a request body.
@@ -665,11 +665,11 @@ export function DELETE(...args: any[]): DecoratorFunction {
 /**
  * Sets up a controller method for a GET request.
  *
- * @param {ControllerRouteOptions} [opts] The custom options.
+ * @param {IControllerRouteOptions} [opts] The custom options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function GET(opts?: ControllerRouteOptions): DecoratorFunction;
+export function GET(opts?: IControllerRouteOptions): DecoratorFunction;
 /**
  * Sets up a controller method for a GET request
  * using a custom path.
@@ -691,11 +691,11 @@ export function GET(...args: any[]): DecoratorFunction {
 /**
  * Sets up a controller method for a HEAD request.
  *
- * @param {ControllerRouteOptions} [opts] The custom options.
+ * @param {IControllerRouteOptions} [opts] The custom options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function HEAD(opts?: ControllerRouteOptions): DecoratorFunction;
+export function HEAD(opts?: IControllerRouteOptions): DecoratorFunction;
 /**
  * Sets up a controller method for a HEAD request
  * using a custom path.
@@ -717,11 +717,11 @@ export function HEAD(...args: any[]): DecoratorFunction {
 /**
  * Sets up a controller method for a OPTIONS request.
  *
- * @param {ControllerRouteOptions} [opts] The custom options.
+ * @param {IControllerRouteOptions} [opts] The custom options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function OPTIONS(opts?: ControllerRouteOptions): DecoratorFunction;
+export function OPTIONS(opts?: IControllerRouteOptions): DecoratorFunction;
 /**
  * Sets up a controller method for a OPTIONS request
  * using a custom path.
@@ -743,11 +743,11 @@ export function OPTIONS(...args: any[]): DecoratorFunction {
 /**
  * Sets up a controller method for a PATCH request.
  *
- * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
+ * @param {IControllerRouteWithBodyOptions} [opts] The custom options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function PATCH(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
+export function PATCH(opts?: IControllerRouteWithBodyOptions): DecoratorFunction;
 /**
  * Sets up a controller method for a PATCH request
  * using a custom path and by optional validating a request body.
@@ -803,11 +803,11 @@ export function PATCH(...args: any[]): DecoratorFunction {
 /**
  * Sets up a controller method for a POST request.
  *
- * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
+ * @param {IControllerRouteWithBodyOptions} [opts] The custom options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function POST(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
+export function POST(opts?: IControllerRouteWithBodyOptions): DecoratorFunction;
 /**
  * Sets up a controller method for a POST request
  * using a custom path and by optional validating a request body.
@@ -863,11 +863,11 @@ export function POST(...args: any[]): DecoratorFunction {
 /**
  * Sets up a controller method for a PUT request.
  *
- * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
+ * @param {IControllerRouteWithBodyOptions} [opts] The custom options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function PUT(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
+export function PUT(opts?: IControllerRouteWithBodyOptions): DecoratorFunction;
 /**
  * Sets up a controller method for a PUT request
  * using a custom path and by optional validating a request body.
@@ -923,11 +923,11 @@ export function PUT(...args: any[]): DecoratorFunction {
 /**
  * Sets up a controller method for a TRACE request.
  *
- * @param {ControllerRouteWithBodyOptions} [opts] The custom options.
+ * @param {IControllerRouteWithBodyOptions} [opts] The custom options.
  *
  * @returns {DecoratorFunction} The decorator function.
  */
-export function TRACE(opts?: ControllerRouteWithBodyOptions): DecoratorFunction;
+export function TRACE(opts?: IControllerRouteWithBodyOptions): DecoratorFunction;
 /**
  * Sets up a controller method for a TRACE request
  * using a custom path and by optional validating a request body.
@@ -1049,9 +1049,9 @@ export function getResponseSerializer(): ResponseSerializer | null | undefined {
 /**
  * Initializes contollers.
  *
- * @param {InitControllersOptions} opts The options.
+ * @param {IInitControllersOptions} opts The options.
  */
-export function initControllers(opts: InitControllersOptions): void {
+export function initControllers(opts: IInitControllersOptions): void {
     const MODULE_EXT = path.extname(__filename);
 
     let cwd = toStringSafe(opts.cwd);
@@ -1165,7 +1165,7 @@ export function initControllers(opts: InitControllersOptions): void {
 
     const ROUTERS: { [path: string]: express.Router } = {};
 
-    const SWAGGER_INFOS: SwaggerInfo[] = [];
+    const SWAGGER_INFOS: ISwaggerInfo[] = [];
 
     for (const F of FILES) {
         if (!fileFilter(F)) {
@@ -1240,7 +1240,7 @@ export function initControllers(opts: InitControllersOptions): void {
                 }
 
                 // s. https://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-                const CONTROLLER: Controller = new (Function.prototype.bind.apply(
+                const CONTROLLER: IController = new (Function.prototype.bind.apply(
                     CONTROLLER_CLASS, [CONTROLLER_CLASS].concat(
                         controllerConstructorArgs
                     ))
@@ -1291,7 +1291,7 @@ export function initControllers(opts: InitControllersOptions): void {
                 // execute 'INITIALIZE_ROUTE' functions
                 // and setup swagger
                 for (const MN of METHOD_NAMES) {
-                    const SWAGGER: SwaggerInfo = CONTROLLER[MN][SWAGGER_INFO];
+                    const SWAGGER: ISwaggerInfo = CONTROLLER[MN][SWAGGER_INFO];
 
                     if (!_.isNil(SWAGGER)) {
                         SWAGGER.controller = CONTROLLER;
@@ -1371,10 +1371,10 @@ export function setResponseSerializer(
 
 function createRouteInitializer(
     name: string, descriptor: PropertyDescriptor,
-    opts: ControllerRouteOptions | ControllerRouteWithBodyOptions,
-    ifFunction: (controller: Controller, path: RouterPath, handler: express.RequestHandler) => void,
-    ifArray: (controller: Controller, path: RouterPath, handlers: express.RequestHandler[]) => void,
-    prepare?: (opts: ControllerRouteOptions | ControllerRouteWithBodyOptions, path: RouterPath) => void,
+    opts: IControllerRouteOptions | IControllerRouteWithBodyOptions,
+    ifFunction: (controller: IController, path: RouterPath, handler: express.RequestHandler) => void,
+    ifArray: (controller: IController, path: RouterPath, handlers: express.RequestHandler[]) => void,
+    prepare?: (opts: IControllerRouteOptions | IControllerRouteWithBodyOptions, path: RouterPath) => void,
 ): void {
     if (_.isNil(opts)) {
         opts = {} as any;
@@ -1401,7 +1401,7 @@ function createRouteInitializer(
     descriptor.enumerable = true;
 
     let routerPath: RouterPath;
-    if (_.isNil((opts as ControllerRouteOptions).path)) {
+    if (_.isNil((opts as IControllerRouteOptions).path)) {
         // default
 
         routerPath = '/';
@@ -1409,7 +1409,7 @@ function createRouteInitializer(
             routerPath += name;
         }
     } else {
-        routerPath = (opts as ControllerRouteOptions).path;
+        routerPath = (opts as IControllerRouteOptions).path;
         if (!_.isRegExp(routerPath)) {
             // string path
 
@@ -1425,7 +1425,7 @@ function createRouteInitializer(
 
     if (!_.isNil(prepare)) {
         prepare(
-            opts as ControllerRouteOptions,
+            opts as IControllerRouteOptions,
             routerPath
         );
     }
@@ -1438,7 +1438,7 @@ function createRouteInitializer(
                 VALUE[REQUEST_ERROR_HANDLER] = opts.onError;
                 VALUE[RESPONSE_SERIALIZER] = opts.serializer;
                 VALUE[AFTER_HANDLER] = opts.useAfter;
-                VALUE[INITIALIZE_ROUTE] = function (controller: Controller) {
+                VALUE[INITIALIZE_ROUTE] = function (controller: IController) {
                     if (!_.isNil(BASE_FUNC)) {
                         BASE_FUNC.apply(null, arguments);
                     }
@@ -1464,14 +1464,14 @@ function createRouteInitializer(
 
 function createRouteInitializerForMethod(
     name: string, descriptor: PropertyDescriptor,
-    opts: ControllerRouteOptions | ControllerRouteWithBodyOptions,
+    opts: IControllerRouteOptions | IControllerRouteWithBodyOptions,
     method: string,
 ): void {
     let inputFormat: number;
     let routeMiddlewares: express.RequestHandler | express.RequestHandler[];
     if (!_.isNil(opts)) {
         inputFormat = parseInt(
-            toStringSafe((opts as ControllerRouteWithBodyOptions).format)
+            toStringSafe((opts as IControllerRouteWithBodyOptions).format)
                 .trim()
         );
 
@@ -1496,7 +1496,7 @@ function createRouteInitializerForMethod(
     }
 
     const UPDATE_SWAGGER_INFO = (p: RouterPath) => {
-        const SI: SwaggerInfo = VALUE[SWAGGER_INFO];
+        const SI: ISwaggerInfo = VALUE[SWAGGER_INFO];
         if (!_.isNil(SI)) {
             p = normalizeRoutePath(
                 path.join(
@@ -1575,7 +1575,7 @@ function createRouteInitializerForMethod(
                 );
         },
         (opts) => {
-            const SCHEMA: joi.AnySchema = (opts as ControllerRouteWithBodyOptions).schema;
+            const SCHEMA: joi.AnySchema = (opts as IControllerRouteWithBodyOptions).schema;
             if (isJoi(SCHEMA)) {
                 let inputHandlers: express.RequestHandler[];
                 switch (inputFormat) {
@@ -1583,8 +1583,8 @@ function createRouteInitializerForMethod(
                         // JSON
                         inputHandlers = jsonValidate(
                             {
-                                failedHandler: (opts as ControllerRouteWithBodyOptions).onValidationFailed,
-                                limit: (opts as ControllerRouteWithBodyOptions).limit,
+                                failedHandler: (opts as IControllerRouteWithBodyOptions).onValidationFailed,
+                                limit: (opts as IControllerRouteWithBodyOptions).limit,
                                 schema: SCHEMA
                             },
                             req => method !== normalizeString(req.method),
@@ -1595,8 +1595,8 @@ function createRouteInitializerForMethod(
                         // form / url encoded
                         inputHandlers = formValidate(
                             {
-                                failedHandler: (opts as ControllerRouteWithBodyOptions).onValidationFailed,
-                                limit: (opts as ControllerRouteWithBodyOptions).limit,
+                                failedHandler: (opts as IControllerRouteWithBodyOptions).onValidationFailed,
+                                limit: (opts as IControllerRouteWithBodyOptions).limit,
                                 schema: SCHEMA
                             },
                             req => method !== normalizeString(req.method),
@@ -1635,7 +1635,7 @@ function formValidate(
     );
 }
 
-function getObjectValidationUploadLimit(opts: ObjectValidatorOptions): number {
+function getObjectValidationUploadLimit(opts: IObjectValidatorOptions): number {
     let limit = parseInt(
         toStringSafe(opts.limit)
             .trim()
@@ -1665,7 +1665,7 @@ function jsonValidate(
 
 function objectValidate(
     middlewares: express.RequestHandler | express.RequestHandler[],
-    opts: ObjectValidatorOptions,
+    opts: IObjectValidatorOptions,
     skipIf?: (req: express.Request) => boolean,
 ): express.RequestHandler[] {
     if (_.isNil(skipIf)) {
@@ -1673,7 +1673,7 @@ function objectValidate(
     }
 
     return asArray(middlewares).concat([
-        async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        (req: express.Request, res: express.Response, next: express.NextFunction) => {
             if (skipIf(req)) {
                 return next();
             }
@@ -1745,16 +1745,16 @@ function normalizeRoutePath(p: string): string {
     return p;
 }
 
-function toControllerRouteOptions(args: any[]): ControllerRouteOptions {
-    let opts: ControllerRouteOptions;
+function toControllerRouteOptions(args: any[]): IControllerRouteOptions {
+    let opts: IControllerRouteOptions;
 
     if (args.length) {
         const FIRST_ARG = args[0];
 
         if (_.isObjectLike(FIRST_ARG)) {
-            // opts?: ControllerRouteOptions
+            // opts?: IControllerRouteOptions
 
-            opts = FIRST_ARG as ControllerRouteOptions;
+            opts = FIRST_ARG as IControllerRouteOptions;
         } else {
             // path: RouterPath
 
@@ -1767,8 +1767,8 @@ function toControllerRouteOptions(args: any[]): ControllerRouteOptions {
     return opts;
 }
 
-function toControllerRouteWithBodyOptions(args: any[]): ControllerRouteWithBodyOptions {
-    let opts: ControllerRouteWithBodyOptions;
+function toControllerRouteWithBodyOptions(args: any[]): IControllerRouteWithBodyOptions {
+    let opts: IControllerRouteWithBodyOptions;
     if (args.length) {
         const FIRST_ARG = args[0];
 
@@ -1795,9 +1795,9 @@ function toControllerRouteWithBodyOptions(args: any[]): ControllerRouteWithBodyO
 
             UPDATE_OPTS_BY_SCHEMA_ARGS(args[1], args[2]);
         } else if (_.isObjectLike(FIRST_ARG)) {
-            // opts?: ControllerRouteWithBodyOptions
+            // opts?: IControllerRouteWithBodyOptions
 
-            opts = FIRST_ARG as ControllerRouteWithBodyOptions;
+            opts = FIRST_ARG as IControllerRouteWithBodyOptions;
         } else {
             // [0] path: RouterPath
             // [1] schema?: joi.AnySchema
@@ -1819,8 +1819,8 @@ function toControllerRouteWithBodyOptions(args: any[]): ControllerRouteWithBodyO
     return opts;
 }
 
-function toObjectValidatorOptions(optsOrSchema: ObjectValidatorOptionsValue): ObjectValidatorOptions {
-    let opts: ObjectValidatorOptions;
+function toObjectValidatorOptions(optsOrSchema: ObjectValidatorOptionsValue): IObjectValidatorOptions {
+    let opts: IObjectValidatorOptions;
     if (_.isNil(optsOrSchema)) {
         opts = {} as any;
     } else {
@@ -1829,7 +1829,7 @@ function toObjectValidatorOptions(optsOrSchema: ObjectValidatorOptionsValue): Ob
                 schema: optsOrSchema
             };
         } else {
-            opts = optsOrSchema as ObjectValidatorOptions;
+            opts = optsOrSchema as IObjectValidatorOptions;
         }
     }
 
@@ -1837,7 +1837,7 @@ function toObjectValidatorOptions(optsOrSchema: ObjectValidatorOptionsValue): Ob
 }
 
 function wrapHandlerForController(
-    opts: WrapHandlerForControllerOptions
+    opts: IWrapHandlerForControllerOptions
 ): express.RequestHandler {
     return async function (req: express.Request, res: express.Response) {
         let executeErrorHandler = true;
@@ -1873,7 +1873,7 @@ function wrapHandlerForController(
                         // no serializer
                         result = HANDLER_RESULT;
                     } else {
-                        const CTX: ResponseSerializerContext = {
+                        const CTX: IResponseSerializerContext = {
                             request: req,
                             response: res,
                             result: HANDLER_RESULT
@@ -1897,7 +1897,7 @@ function wrapHandlerForController(
                     if (!_.isNil(useAfter)) {
                         // call after-ware
 
-                        const CTX: AfterRequestHandlerContext = {
+                        const CTX: IAfterRequestHandlerContext = {
                             error: lastErr,
                             executeErrorHandler: executeErrorHandler,
                             request: req,
@@ -1928,7 +1928,7 @@ function wrapHandlerForController(
                 errorHandler = getRequestErrorHandler();  // (global) default
             }
 
-            const CTX: RequestErrorHandlerContext = {
+            const CTX: IRequestErrorHandlerContext = {
                 error: lastErr,
                 request: req,
                 response: res

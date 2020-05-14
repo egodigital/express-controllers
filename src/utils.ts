@@ -104,7 +104,7 @@ export function normalizeString(val: any): string {
  *
  * @param {NodeJS.ReadStream} stream The stream to read.
  *
- * @returns Promise<Buffer> The promise with the read data.
+ * @returns {Promise<Buffer>} The promise with the read data.
  */
 export function readAll(stream: NodeJS.ReadStream): Promise<Buffer> {
     return new Promise<Buffer>((resolve, reject) => {
