@@ -4,7 +4,7 @@
 
 * !!! BREAKING CHANGES !!!
   * add `allowDefaultImports` to [IInitControllersOptions](https://egodigital.github.io/express-controllers/interfaces/_index_.iinitcontrollersoptions.html) interface, which is `(true)` by default
-* miminum requirement is [Node 12+](https://nodejs.org/dist/latest-v12.x/docs/api/) now
+* mininum requirement is [Node 12+](https://nodejs.org/dist/latest-v12.x/docs/api/) now
 * code build in [strict mode](https://www.typescriptlang.org/docs/handbook/compiler-options.html) now
 
 ## 6.1.4
