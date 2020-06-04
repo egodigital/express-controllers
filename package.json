@@ -41,24 +41,28 @@
         "@types/express": "4.17.1",
         "@types/joi": "^14.3.4",
         "@types/js-yaml": "^3.12.4",
-        "@types/lodash": "^4.14.150",
-        "@types/node": "^10.17.21",
+        "@types/lodash": "^4.14.155",
+        "@types/node": "^10.17.24",
         "@types/swagger-ui-express": "^4.1.2",
         "express": "^4.17.1",
         "fast-glob": "^3.2.2",
         "is-stream": "^2.0.0",
         "joi": "^14.3.1",
-        "js-yaml": "^3.13.1",
+        "js-yaml": "^3.14.0",
         "lodash": "^4.17.15",
-        "moment": "^2.25.3",
+        "moment": "^2.26.0",
         "swagger-ui-express": "^4.1.4"
     },
     "devDependencies": {
         "@egodigital/tsconfig": "^4.0.0",
-        "eslint": "^7.0.0",
+        "eslint": "^7.1.0",
         "eslint-config-ego": "^0.12.0",
-        "typedoc": "^0.17.6",
-        "typescript": "^3.9.2"
+        "typedoc": "^0.17.7",
+        "typescript": "^3.9.3"
+    },
+    "engines": {
+        "node": ">=12.0.0",
+        "npm": ">=6.9.0"
     },
     "scripts": {
         "build": "(rm -r ./lib || true) && tsc && tsc -d",

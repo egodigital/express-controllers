@@ -1,5 +1,22 @@
 # Change Log (@egodigital/express-controllers)
 
+## 7.0.0
+
+* miminum requirement is [Node 12+](https://nodejs.org/dist/latest-v12.x/docs/api/) now
+* code build in [strict mode](https://www.typescriptlang.org/docs/handbook/compiler-options.html) now
+
+## 6.1.4
+
+* fix `minimist < 0.2.1` security issue
+
+## 6.1.3
+
+* add `node >= 10.0.0` as minimum requirement to package.json/.npmrc
+
+## 6.1.2
+
+* update README.md to fix issue [#2](https://github.com/egodigital/express-controllers/issues/2)
+
 ## 6.1.0
 
 * implemented "after-ware", handlers, which are invoked after a controller method call
