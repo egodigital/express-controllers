@@ -17,6 +17,7 @@
 
 import * as _ from 'lodash';
 import * as joi from 'joi';
+import { Nilable } from '@egodigital/types';
 
 
 /**
@@ -166,11 +167,11 @@ export function toBooleanSafe(val: any, defaultValue: boolean = false): boolean 
 /**
  * Converts a value to a string, if needed, that is not (null) and (undefined).
  *
- * @param {any} val The input value.
+ * @param {Nilable} val The input value.
  *
  * @returns {string} The output value.
  */
-export function toStringSafe(val: any): string {
+export function toStringSafe(val: Nilable): string {
     if (_.isString(val)) {
         return val;
     }
