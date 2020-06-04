@@ -292,6 +292,10 @@ export interface IInitControllersOptions<TApp extends any = ExpressApp> {
      */
     app: ExpressApp;
     /**
+     * Allows to import controller classes from default exports. Default: (true)
+     */
+    allowDefaultImports?: boolean;
+    /**
      * The custom name for the controller class or a function that provides it. Default 'Controller'
      */
     controllerClass?: ControllerClassNameProvider | string;
@@ -1113,6 +1117,8 @@ export function initControllers(opts: IInitControllersOptions): void {
         fileFilter = () => true;  // default: accept all
     }
 
+    const ALLOW_DEFAULT_IMPORTS = toBooleanSafe(opts.allowDefaultImports, true);
+
     const FILE_PATTERNS = asArray(opts.files)
         .map(fp => toStringSafe(fp))
         .filter(fp => '' !== fp.trim());
@@ -1203,8 +1209,14 @@ export function initControllers(opts: IInitControllersOptions): void {
                 FILE_ROOT_PATH, F,
             );
 
-            const CONTROLLER_CLASS = CONTROLLER_MODULE[controllerClassName];
-            if (CONTROLLER_CLASS) {
+            let controllerClass = CONTROLLER_MODULE[controllerClassName];
+            if (_.isNil(controllerClass)) {
+                if (ALLOW_DEFAULT_IMPORTS) {
+                    controllerClass = CONTROLLER_MODULE.default;  // try import from 'default'
+                }
+            }
+
+            if (controllerClass) {
                 const ROOT_PATH = FILE_ROOT_PATH.split('/@')
                     .join('/:');
 
@@ -1243,10 +1255,9 @@ export function initControllers(opts: IInitControllersOptions): void {
 
                 // s. https://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
                 const CONTROLLER: IController = new (Function.prototype.bind.apply(
-                    // @ts-ignore
-                    CONTROLLER_CLASS, [CONTROLLER_CLASS].concat(
+                    controllerClass, [controllerClass].concat(
                         controllerConstructorArgs
-                    ))
+                    ) as any)
                 );
 
                 if (onControllerCreated) {
@@ -1273,7 +1284,7 @@ export function initControllers(opts: IInitControllersOptions): void {
                 // get all methods, which have an
                 // 'INITIALIZE_ROUTE' function
                 const METHOD_NAMES = Object.getOwnPropertyNames(
-                    CONTROLLER_CLASS.prototype
+                    controllerClass.prototype
                 ).filter(mn => _.isFunction(
                     // @ts-ignore
                     CONTROLLER[mn][INITIALIZE_ROUTE]

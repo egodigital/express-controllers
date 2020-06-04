@@ -69,6 +69,7 @@
         "deploy": "npm install && npm run build && npm publish",
         "doc": "(rm -r ./doc || true) && (typedoc --out ./doc ./src)",
         "lint": "eslint -c .eslintrc.js --ext .ts src",
-        "lint:fix": "eslint -c .eslintrc.js --fix --ext .ts src"
+        "lint:fix": "eslint -c .eslintrc.js --fix --ext .ts src",
+        "sandbox": "npm run build && cd lib && node ./sandbox.js"
     }
 }
