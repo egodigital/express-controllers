@@ -2,7 +2,7 @@
 
 # express-controllers
 
-Sets up controllers, which are running with [Express.js](https://expressjs.com/).
+Sets up controllers, which are running with [Express.js](https://expressjs.com/) and running with [Node.js 12+](https://nodejs.org/dist/latest-v12.x/docs/api/).
 
 ## Install
 
