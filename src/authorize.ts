@@ -19,6 +19,7 @@ import * as _ from 'lodash';
 import * as express from 'express';
 import { DecoratorFunction, IController } from './index';
 import { asArray, toBooleanSafe, toStringSafe } from './utils';
+import { Nilable } from '@egodigital/types';
 
 /**
  * A handler, that is invoked, if authorization failed.
@@ -127,8 +128,8 @@ export interface IAuthorizeOptions {
  * Key for storing Authorize() options.
  */
 export const AUTHORIZER_OPTIONS = Symbol('AUTHORIZER_OPTIONS');
-let authorizationHandler: AuthorizeHandler;
-let authorizationFailedHandler: AuthorizeFailedHandler;
+let authorizationHandler: Nilable<AuthorizeHandler>;
+let authorizationFailedHandler: Nilable<AuthorizeFailedHandler>;
 
 
 /**
@@ -209,9 +210,10 @@ export function createRouteAuthorizer(
     controller: IController, method: Function
 ): express.RequestHandler {
     return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        // @ts-ignore
         const OPTS: IAuthorizeOptions = method[AUTHORIZER_OPTIONS];
         if (!_.isNil(OPTS)) {
-            let authorizer: AuthorizeHandler = OPTS.authorize;
+            let authorizer: Nilable<AuthorizeHandler> = OPTS.authorize;
             if (_.isNil(authorizer)) {
                 authorizer = controller.__authorize;  // of controller
             }
@@ -248,7 +250,7 @@ export function createRouteAuthorizer(
                 }
 
                 if (!isAuthorized) {
-                    let failedHandler: AuthorizeFailedHandler = OPTS.onAuthorizeFailed;
+                    let failedHandler: Nilable<AuthorizeFailedHandler> = OPTS.onAuthorizeFailed;
                     if (_.isNil(failedHandler)) {
                         failedHandler = controller.__authorizeFailed;  // of controller
                     }
@@ -293,28 +295,28 @@ export function createRouteAuthorizer(
 /**
  * Returns the global handler, that is invoked if authorization of a request fails.
  *
- * @returns {AuthorizeFailedHandler} The handler.
+ * @returns {Nilable<AuthorizeFailedHandler>} The handler.
  */
-export function getAuthorizeFailedHandler(): AuthorizeFailedHandler {
+export function getAuthorizeFailedHandler(): Nilable<AuthorizeFailedHandler> {
     return authorizationFailedHandler;
 }
 
 /**
  * Returns the global handler, that authorized requests.
  *
- * @returns {AuthorizeHandler} The handler.
+ * @returns {Nilable<AuthorizeHandler>} The handler.
  */
-export function getAuthorizeHandler(): AuthorizeHandler {
+export function getAuthorizeHandler(): Nilable<AuthorizeHandler> {
     return authorizationHandler;
 }
 
 /**
  * Sets the global handler, which is invoked if a request authorization fails.
  *
- * @param {AuthorizeFailedHandler|undefined|null} newHandler The new handler.
+ * @param { Nilable<AuthorizeFailedHandler>} newHandler The new handler.
  */
 export function setAuthorizeFailedHandler(
-    newHandler: AuthorizeFailedHandler | undefined | null
+    newHandler: Nilable<AuthorizeFailedHandler>
 ): void {
     authorizationFailedHandler = newHandler;
 }
@@ -322,10 +324,10 @@ export function setAuthorizeFailedHandler(
 /**
  * Sets the global handler, which authorizes requests.
  *
- * @param {AuthorizeHandler|undefined|null} newHandler The new handler.
+ * @param {Nilable<AuthorizeHandler>} newHandler The new handler.
  */
 export function setAuthorizeHandler(
-    newHandler: AuthorizeHandler | undefined | null
+    newHandler: Nilable<AuthorizeHandler>
 ): void {
     authorizationHandler = newHandler;
 }

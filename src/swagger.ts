@@ -22,6 +22,7 @@ import * as yaml from 'js-yaml';
 import { AUTHORIZER_OPTIONS } from './authorize';
 import { DecoratorFunction, IController, REQUEST_VALIDATORS, ExpressApp } from './index';
 import { asArray, compareValuesBy, isEmptyString, normalizeString, toBooleanSafe, toStringSafe } from './utils';
+import { Nilable, Optional } from '@egodigital/types';
 
 /**
  * Possible value for an API url scheme.
@@ -290,7 +291,7 @@ export type SwaggerSecurityDefintion = { [name: string]: any[] };
  * Key for storing a SwaggerInfo document.
  */
 export const SWAGGER_INFO = Symbol('SWAGGER_INFO');
-let swaggerPathDefinitionUpdater: SwaggerPathDefinitionUpdater;
+let swaggerPathDefinitionUpdater: Nilable<SwaggerPathDefinitionUpdater>;
 
 
 /**
@@ -324,6 +325,7 @@ export function Swagger(...args: any[]): DecoratorFunction {
     return function (controllerConstructor: any, name: string, descriptor: PropertyDescriptor) {
         const VALUE: Function = descriptor.value;
 
+        // @ts-ignore
         VALUE[SWAGGER_INFO] = toSwaggerInfo(args);
     };
 }
@@ -332,19 +334,19 @@ export function Swagger(...args: any[]): DecoratorFunction {
 /**
  * Returns the global function, for updating Swagger path definitions.
  *
- * @returns {SwaggerPathDefinitionUpdater} The handler.
+ * @returns {Nilable<SwaggerPathDefinitionUpdater>} The handler.
  */
-export function getSwaggerPathDefinitionUpdater(): SwaggerPathDefinitionUpdater {
+export function getSwaggerPathDefinitionUpdater(): Nilable<SwaggerPathDefinitionUpdater> {
     return swaggerPathDefinitionUpdater;
 }
 
 /**
  * Sets the global function, for updating Swagger path definitions.
  *
- * @param {SwaggerPathDefinitionUpdater|undefined|null} newUpdater The new handler.
+ * @param {Nilable<SwaggerPathDefinitionUpdater>} newUpdater The new handler.
  */
 export function setSwaggerPathDefinitionUpdater(
-    newUpdater: SwaggerPathDefinitionUpdater | null | undefined,
+    newUpdater: Nilable<SwaggerPathDefinitionUpdater>,
 ): void {
     swaggerPathDefinitionUpdater = newUpdater;
 }
@@ -442,6 +444,7 @@ export function setupSwaggerUI(
             // sort by tag name
             Object.keys(opts.document.tags).sort((x, y) => compareValuesBy(x, y, t => normalizeString(t))).forEach(t => {
                 const TAG_NAME = t.trim();
+                // @ts-ignore
                 const TAG_DESCRIPTION = toStringSafe(opts.document.tags[t])
                     .trim();
 
@@ -454,27 +457,27 @@ export function setupSwaggerUI(
     }
 
     // custom CSS
-    let css = toStringSafe(opts.css);
+    let css: Optional<string> = toStringSafe(opts.css);
     if (isEmptyString(css)) {
-        css = null;
+        css = undefined;
     }
 
     // fav icon
-    let favIcon = toStringSafe(opts.favIcon);
+    let favIcon: Optional<string> = toStringSafe(opts.favIcon);
     if (isEmptyString(favIcon)) {
-        favIcon = null;
+        favIcon = undefined;
     }
 
     // Swagger URL
-    let url = toStringSafe(opts.url);
+    let url: Optional<string> = toStringSafe(opts.url);
     if (isEmptyString(url)) {
-        url = null;
+        url = undefined;
     }
 
     // custom site title
-    let title = toStringSafe(opts.title);
+    let title: Optional<string> = toStringSafe(opts.title);
     if (isEmptyString(title)) {
-        title = null;
+        title = undefined;
     }
 
     if (opts.definitions) {
@@ -487,6 +490,7 @@ export function setupSwaggerUI(
                 return;
             }
 
+            // @ts-ignore
             newSwaggerDoc.definitions[DEF_NAME] = opts.definitions[dn];
         });
     }
@@ -513,14 +517,14 @@ export function setupSwaggerUI(
                         // set for each method
                         si.groupedRouterMethods[routePath].sort().forEach(m => {
                             let pathDefinition = si.pathDefinition;
-                            let pathDefinitionUpdater: SwaggerPathDefinitionUpdater;
+                            let pathDefinitionUpdater: Nilable<SwaggerPathDefinitionUpdater>;
 
                             if (si.options) {
                                 pathDefinitionUpdater = si.options.pathDefinitionUpdater;
                             }
 
                             if (_.isNil(pathDefinitionUpdater)) {
-                                pathDefinitionUpdater = si.controller.__updateSwaggerPath;  // controller-wide
+                                pathDefinitionUpdater = si.controller!.__updateSwaggerPath;  // controller-wide
                             }
                             if (_.isNil(pathDefinitionUpdater)) {
                                 pathDefinitionUpdater = getSwaggerPathDefinitionUpdater();  // global
@@ -529,7 +533,9 @@ export function setupSwaggerUI(
                             if (pathDefinitionUpdater) {
                                 const UPDATER_CTX: ISwaggerPathDefinitionUpdaterContext = {
                                     definition: pathDefinition,
+                                    // @ts-ignore
                                     doesValidate: !!asArray(si.controllerMethod[REQUEST_VALIDATORS]).length,
+                                    // @ts-ignore
                                     hasAuthorize: !_.isNil(si.controllerMethod[AUTHORIZER_OPTIONS]),
                                     method: m.toUpperCase(),
                                     path: routePath
@@ -566,6 +572,7 @@ export function setupSwaggerUI(
             // additional middlewares
 
             ROUTER.use.apply(
+                // @ts-ignore
                 ROUTER, MIDDLEWARES
             );
         }
@@ -573,8 +580,8 @@ export function setupSwaggerUI(
         ROUTER.use('/', swaggerUi.serveFiles(newSwaggerDoc));
         ROUTER.get('/', swaggerUi.setup(
             newSwaggerDoc,
-            null,  // opts
-            null,  // options
+            undefined,  // opts
+            undefined,  // options
             css,  // customCss
             favIcon,  // customfavIcon
             url,  // swaggerUrl

@@ -23,6 +23,7 @@ import * as path from 'path';
 import { AuthorizeHandler, AuthorizeFailedHandler, createRouteAuthorizer } from './authorize';
 import { InitControllersSwaggerOptionsValue, ISwaggerInfo, setupSwaggerUI, SwaggerPathDefinitionUpdater, SWAGGER_INFO } from './swagger';
 import { asArray, compareValuesBy, isEmptyString, isJoi, normalizeString, toBooleanSafe, toStringSafe } from './utils';
+import { Nilable, Optional } from '@egodigital/types';
 
 
 /**
@@ -490,19 +491,19 @@ export enum ObjectValidationFailedReason {
 }
 
 const AFTER_HANDLER = Symbol('AFTER_HANDLER');
-let afterRequestHandler: AfterRequestHandler;
+let afterRequestHandler: Nilable<ResponseSerializer<any>>;
 const DEFAULT_CONTROLLER_CLASS_NAME = 'Controller';
 const INITIALIZE_ROUTE = Symbol('INITIALIZE_ROUTE');
-let objValidateFailedHandler: ObjectValidationFailedHandler;
+let objValidateFailedHandler: Nilable<ObjectValidationFailedHandler<any>>;
 const METHOD_LIST = Symbol('METHOD_LIST');
-let reqErrorHandler: RequestErrorHandler;
+let reqErrorHandler: Nilable<RequestErrorHandler<any>>;
 const REQUEST_ERROR_HANDLER = Symbol('REQUEST_ERROR_HANDLER');
 /**
  * Index / key for request validators.
  */
 export const REQUEST_VALIDATORS = Symbol('REQUEST_VALIDATORS');
 const RESPONSE_SERIALIZER = Symbol('RESPONSE_SERIALIZER');
-let resSerializer: ResponseSerializer;
+let resSerializer: Nilable<ResponseSerializer<any>>;
 
 
 /**
@@ -984,9 +985,10 @@ export function TRACE(...args: any[]): DecoratorFunction {
 /**
  * Returns the global handler, that is invoked after a controller method.
  *
- * @returns {AfterRequestHandler<TRequest>} The handler.
+ * @returns {Nilable<ResponseSerializer>} The handler.
  */
-export function getAfterRequestHandler<TRequest extends express.Request = express.Request>(): AfterRequestHandler<TRequest> {
+export function getAfterRequestHandler<TRequest extends express.Request = express.Request>(): Nilable<ResponseSerializer<TRequest>> {
+    // @ts-ignore
     return afterRequestHandler;
 }
 
@@ -996,7 +998,7 @@ export function getAfterRequestHandler<TRequest extends express.Request = expres
  * @returns {ObjectValidationFailedHandler} The handler.
  */
 export function getObjectValidationFailedHandler(): ObjectValidationFailedHandler {
-    let handler: ObjectValidationFailedHandler = objValidateFailedHandler;
+    let handler: Nilable<ObjectValidationFailedHandler> = objValidateFailedHandler;
     if (_.isNil(handler)) {
         // default
 
@@ -1025,7 +1027,7 @@ export function getObjectValidationFailedHandler(): ObjectValidationFailedHandle
  * @returns {RequestErrorHandler} The handler.
  */
 export function getRequestErrorHandler(): RequestErrorHandler {
-    let handler: RequestErrorHandler = reqErrorHandler;
+    let handler: Nilable<RequestErrorHandler> = reqErrorHandler;
     if (_.isNil(handler)) {
         // default
 
@@ -1067,9 +1069,9 @@ export function initControllers(opts: IInitControllersOptions): void {
     }
     cwd = path.resolve(cwd);
 
-    let onControllerCreated: ControllerCreatedEventHandler;
-    let onFileLoaded: ControllerFileLoadedEventHandler;
-    let onFileLoading: ControllerFileLoadingEventHandler;
+    let onControllerCreated: Nilable<ControllerCreatedEventHandler>;
+    let onFileLoaded: Nilable<ControllerFileLoadedEventHandler>;
+    let onFileLoading: Nilable<ControllerFileLoadingEventHandler>;
     if (!_.isNil(opts.events)) {
         onControllerCreated = opts.events.onControllerCreated;
         onFileLoaded = opts.events.onFileLoaded;
@@ -1077,7 +1079,7 @@ export function initControllers(opts: IInitControllersOptions): void {
     }
 
     // controller class name
-    let controllerClassNameProvider: ControllerClassNameProvider;
+    let controllerClassNameProvider: Nilable<ControllerClassNameProvider>;
     if (!_.isNil(opts.controllerClass)) {
         if (_.isFunction(opts.controllerClass)) {
             controllerClassNameProvider = opts.controllerClass as ControllerClassNameProvider;
@@ -1091,7 +1093,7 @@ export function initControllers(opts: IInitControllersOptions): void {
     }
 
     // constructor arguments for controller class
-    let controllerConstructorArgsProvider: ControllerClassConstructorArgsProvider;
+    let controllerConstructorArgsProvider: Nilable<ControllerClassConstructorArgsProvider>;
     if (!_.isNil(opts.controllerConstructorArgs)) {
         if (_.isFunction(opts.controllerConstructorArgs)) {
             controllerConstructorArgsProvider = opts.controllerConstructorArgs as ControllerClassConstructorArgsProvider;
@@ -1241,6 +1243,7 @@ export function initControllers(opts: IInitControllersOptions): void {
 
                 // s. https://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
                 const CONTROLLER: IController = new (Function.prototype.bind.apply(
+                    // @ts-ignore
                     CONTROLLER_CLASS, [CONTROLLER_CLASS].concat(
                         controllerConstructorArgs
                     ))
@@ -1256,9 +1259,10 @@ export function initControllers(opts: IInitControllersOptions): void {
                 }
 
                 const ROUTER_MIDDLEWARES = asArray(CONTROLLER.__use)
-                    .map(rmw => wrapHandlerForController({ controller: CONTROLLER, handler: rmw }));
+                    .map(rmw => wrapHandlerForController({ controller: CONTROLLER, handler: rmw! }));
                 if (ROUTER_MIDDLEWARES.length) {
                     ROUTER.use
+                        // @ts-ignore
                         .apply(ROUTER, ROUTER_MIDDLEWARES);
                 }
 
@@ -1271,6 +1275,7 @@ export function initControllers(opts: IInitControllersOptions): void {
                 const METHOD_NAMES = Object.getOwnPropertyNames(
                     CONTROLLER_CLASS.prototype
                 ).filter(mn => _.isFunction(
+                    // @ts-ignore
                     CONTROLLER[mn][INITIALIZE_ROUTE]
                 )).sort((x, y) => {
                     const COMP_0 = compareValuesBy(x, y, (mn) => {
@@ -1291,17 +1296,21 @@ export function initControllers(opts: IInitControllersOptions): void {
                 // execute 'INITIALIZE_ROUTE' functions
                 // and setup swagger
                 for (const MN of METHOD_NAMES) {
+                    // @ts-ignore
                     const SWAGGER: ISwaggerInfo = CONTROLLER[MN][SWAGGER_INFO];
 
                     if (!_.isNil(SWAGGER)) {
                         SWAGGER.controller = CONTROLLER;
+                        // @ts-ignore
                         SWAGGER.controllerMethod = CONTROLLER[MN];
+                        // @ts-ignore
                         SWAGGER.methods = asArray<string>(CONTROLLER[MN][METHOD_LIST]);
                         SWAGGER.controllerRootPath = ROOT_PATH;
 
                         SWAGGER_INFOS.push(SWAGGER);
                     }
 
+                    // @ts-ignore
                     CONTROLLER[MN][INITIALIZE_ROUTE](
                         CONTROLLER
                     );
@@ -1321,27 +1330,28 @@ export function initControllers(opts: IInitControllersOptions): void {
         }
     }
 
-    setupSwaggerUI(opts.app, opts.swagger, SWAGGER_INFOS);
+    setupSwaggerUI(opts.app, opts.swagger!, SWAGGER_INFOS);
 }
 
 /**
  * Sets a global handler, that is invoked after a controller method.
  *
- * @param {AfterRequestHandler<TRequest>|undefined|null} newHandler The new handler.
+ * @param {Nilable<AfterRequestHandler<TRequest>>} newHandler The new handler.
  */
 export function setAfterRequestHandler<TRequest extends express.Request = express.Request>(
-    newHandler: AfterRequestHandler<TRequest> | undefined | null
+    newHandler: Nilable<AfterRequestHandler<TRequest>>
 ) {
+    // @ts-ignore
     afterRequestHandler = newHandler;
 }
 
 /**
  * Sets the global handler, which checks if an object validation fails.
  *
- * @param {ObjectValidationFailedHandler|undefined|null} newHandler The new handler.
+ * @param {Nilable<ObjectValidationFailedHandler>} newHandler The new handler.
  */
 export function setObjectValidationFailedHandler(
-    newHandler: ObjectValidationFailedHandler | undefined | null
+    newHandler: Nilable<ObjectValidationFailedHandler>
 ): void {
     objValidateFailedHandler = newHandler;
 }
@@ -1349,10 +1359,10 @@ export function setObjectValidationFailedHandler(
 /**
  * Sets the global handler, which handles request errors.
  *
- * @param {RequestErrorHandler|undefined|null} newHandler The new handler.
+ * @param {Nilable<RequestErrorHandler>} newHandler The new handler.
  */
 export function setRequestErrorHandler(
-    newHandler: RequestErrorHandler | undefined | null
+    newHandler: Nilable<RequestErrorHandler>
 ): void {
     reqErrorHandler = newHandler;
 }
@@ -1360,10 +1370,10 @@ export function setRequestErrorHandler(
 /**
  * Sets a global response serializer.
  *
- * @param {ResponseSerializer|undefined|null} newSerializer The new serializer.
+ * @param {Nilable<ResponseSerializer>} newSerializer The new serializer.
  */
 export function setResponseSerializer(
-    newSerializer: ResponseSerializer | undefined | null
+    newSerializer: Nilable<ResponseSerializer>
 ) {
     resSerializer = newSerializer;
 }
@@ -1409,7 +1419,7 @@ function createRouteInitializer(
             routerPath += name;
         }
     } else {
-        routerPath = (opts as IControllerRouteOptions).path;
+        routerPath = (opts as IControllerRouteOptions).path!;
         if (!_.isRegExp(routerPath)) {
             // string path
 
@@ -1467,8 +1477,8 @@ function createRouteInitializerForMethod(
     opts: IControllerRouteOptions | IControllerRouteWithBodyOptions,
     method: string,
 ): void {
-    let inputFormat: number;
-    let routeMiddlewares: express.RequestHandler | express.RequestHandler[];
+    let inputFormat: Nilable<number>;
+    let routeMiddlewares: Nilable<express.RequestHandler | express.RequestHandler[]>;
     if (!_.isNil(opts)) {
         inputFormat = parseInt(
             toStringSafe((opts as IControllerRouteWithBodyOptions).format)
@@ -1478,7 +1488,7 @@ function createRouteInitializerForMethod(
         routeMiddlewares = opts.use;
     }
 
-    if (isNaN(inputFormat)) {
+    if (isNaN(inputFormat!)) {
         inputFormat = BodyFormat.JSON;
     }
 
@@ -1486,20 +1496,26 @@ function createRouteInitializerForMethod(
 
     // method list (for Swagger UI, e.g.)
     {
+        // @ts-ignore
         if (!_.isArray(VALUE[METHOD_LIST])) {
+            // @ts-ignore
             VALUE[METHOD_LIST] = [];
         }
 
+        // @ts-ignore
         if (VALUE[METHOD_LIST].indexOf(method) < 0) {
+            // @ts-ignore
             VALUE[METHOD_LIST].push(method);
         }
     }
 
     const UPDATE_SWAGGER_INFO = (p: RouterPath) => {
+        // @ts-ignore
         const SI: ISwaggerInfo = VALUE[SWAGGER_INFO];
         if (!_.isNil(SI)) {
             p = normalizeRoutePath(
                 path.join(
+                    // @ts-ignore
                     SI.controllerRootPath, toStringSafe(p)
                 )
             );
@@ -1521,12 +1537,13 @@ function createRouteInitializerForMethod(
         (controller, path, handler) => {
             UPDATE_SWAGGER_INFO(path);
 
+            // @ts-ignore
             controller.__router[method]
                 .apply(controller.__router,
                     [path as any]
                         .concat(
                             asArray(routeMiddlewares)
-                                .map(rmw => wrapHandlerForController({ controller, handler: rmw }))
+                                .map(rmw => wrapHandlerForController({ controller, handler: rmw! }))
                         )
                         .concat(
                             [
@@ -1549,12 +1566,13 @@ function createRouteInitializerForMethod(
         (controller, path, handlers) => {
             UPDATE_SWAGGER_INFO(path);
 
+            // @ts-ignore
             controller.__router[method]
                 .apply(controller.__router,
                     [path as any]
                         .concat(
                             asArray(routeMiddlewares)
-                                .map(rmw => wrapHandlerForController({ controller, handler: rmw }))
+                                .map(rmw => wrapHandlerForController({ controller, handler: rmw! }))
                         )
                         .concat(
                             [
@@ -1575,7 +1593,7 @@ function createRouteInitializerForMethod(
                 );
         },
         (opts) => {
-            const SCHEMA: joi.AnySchema = (opts as IControllerRouteWithBodyOptions).schema;
+            const SCHEMA: Nilable<joi.AnySchema> = (opts as IControllerRouteWithBodyOptions).schema;
             if (isJoi(SCHEMA)) {
                 let inputHandlers: express.RequestHandler[];
                 switch (inputFormat) {
@@ -1635,8 +1653,8 @@ function formValidate(
     );
 }
 
-function getObjectValidationUploadLimit(opts: IObjectValidatorOptions): number {
-    let limit = parseInt(
+function getObjectValidationUploadLimit(opts: IObjectValidatorOptions): Optional<number> {
+    let limit: Nilable<number> = parseInt(
         toStringSafe(opts.limit)
             .trim()
     );
@@ -1674,6 +1692,7 @@ function objectValidate(
 
     return asArray(middlewares).concat([
         (req: express.Request, res: express.Response, next: express.NextFunction) => {
+            // @ts-ignore
             if (skipIf(req)) {
                 return next();
             }
@@ -1764,7 +1783,7 @@ function toControllerRouteOptions(args: any[]): IControllerRouteOptions {
         }
     }
 
-    return opts;
+    return opts!;
 }
 
 function toControllerRouteWithBodyOptions(args: any[]): IControllerRouteWithBodyOptions {
@@ -1816,7 +1835,7 @@ function toControllerRouteWithBodyOptions(args: any[]): IControllerRouteWithBody
         }
     }
 
-    return opts;
+    return opts!;
 }
 
 function toObjectValidatorOptions(optsOrSchema: ObjectValidatorOptionsValue): IObjectValidatorOptions {
@@ -1845,7 +1864,8 @@ function wrapHandlerForController(
         let result: any;
 
         // "after-ware"
-        let useAfter: AfterRequestHandler = opts.handler[AFTER_HANDLER];
+        // @ts-ignore
+        let useAfter: Nilable<AfterRequestHandler> = opts.handler[AFTER_HANDLER];
         if (_.isNil(useAfter)) {
             useAfter = opts.controller.__useAfter;  // default of controller
         }
@@ -1856,12 +1876,14 @@ function wrapHandlerForController(
         try {
             try {
                 const HANDLER_RESULT = await Promise.resolve(
+                    // @ts-ignore
                     opts.handler.apply(opts.controller, arguments)
                 );
 
                 if (opts.isControllerMethod) {
                     // serializer
-                    let serializer: ResponseSerializer = opts.handler[RESPONSE_SERIALIZER];  // custom serializer by request
+                    // @ts-ignore
+                    let serializer: Nilable<ResponseSerializer> = opts.handler[RESPONSE_SERIALIZER];  // custom serializer by request
                     if (_.isNil(serializer)) {
                         serializer = opts.controller.__serialize;  // default of controller
                     }
@@ -1920,7 +1942,8 @@ function wrapHandlerForController(
                 return;  // do not call error handler
             }
 
-            let errorHandler: RequestErrorHandler = opts.handler[REQUEST_ERROR_HANDLER];  // custom handler by request
+            // @ts-ignore
+            let errorHandler: Nilable<RequestErrorHandler> = opts.handler[REQUEST_ERROR_HANDLER];  // custom handler by request
             if (_.isNil(errorHandler)) {
                 errorHandler = opts.controller.__error;  // default of controller
             }
