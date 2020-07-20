@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+## 6.2.0
+
+* npm update
+
 ## 6.1.4
 
 * fix `minimist < 0.2.1` security issue
