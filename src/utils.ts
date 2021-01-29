@@ -78,12 +78,8 @@ export function isEmptyString(val: any): boolean {
  *
  * @return {boolean} Is joi object or not.
  */
-export function isJoi<TObj extends joi.JoiObject = joi.AnySchema>(val: any): val is TObj {
-    if (!_.isNil(val)) {
-        return true === val['isJoi'];
-    }
-
-    return false;
+export function isJoi<TObj extends joi.SchemaInternals = joi.AnySchema>(val: any): val is TObj {
+    return joi.isSchema(val);
 }
 
 /**

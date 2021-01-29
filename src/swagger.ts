@@ -612,7 +612,7 @@ export function setupSwaggerUI(
         });
 
         // download link (YAML)
-        const YAML_DOC = yaml.safeDump(newSwaggerDoc);
+        const YAML_DOC = yaml.dump(newSwaggerDoc);
         ROUTER.get(`/yaml`, function (req, res) {
             return res.status(200)
                 .header('content-type', 'application/x-yaml; charset=utf-8')
