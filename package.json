@@ -1,6 +1,6 @@
 {
     "name": "@egodigital/express-controllers",
-    "version": "7.0.0",
+    "version": "7.0.1",
     "description": "Sets up controllers for Express framework.",
     "author": "e.GO Digital GmbH, Aachen, Germany",
     "license": "LGPL-3.0",
@@ -59,8 +59,7 @@
         "typescript": "^4.1.3"
     },
     "engines": {
-        "node": ">=12.0.0",
-        "npm": ">=6.9.0"
+        "node": ">=12.0.0"
     },
     "scripts": {
         "build": "del ./lib && tsc",
