@@ -1,5 +1,10 @@
 # Change Log (@egodigital/express-controllers)
 
+## 7.0.0
+
+* module requires a least Node.js 12+ and NPM 6.9.0+ now
+* npm update
+
 ## 6.2.0
 
 * npm update
