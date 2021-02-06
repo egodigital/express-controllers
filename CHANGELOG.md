@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+# 7.1.0
+
+* add global `schema` namespace to [joi](https://www.npmjs.com/package/joi) module, used by that library
+
 ## 7.0.1
 
 * module requires a least Node.js 12+ now

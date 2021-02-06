@@ -1953,5 +1953,6 @@ function wrapHandlerForController(
 
 
 export * from './authorize';
+export * from './schema';
 export * from './swagger';
 export * from './tools';
