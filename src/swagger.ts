@@ -22,6 +22,7 @@ import * as yaml from 'js-yaml';
 import { AUTHORIZER_OPTIONS } from './authorize';
 import { Controller, DecoratorFunction, REQUEST_VALIDATORS, ExpressApp } from './index';
 import { asArray, compareValuesBy, isEmptyString, normalizeString, toBooleanSafe, toStringSafe } from './utils';
+import { RequestHandler } from 'express';
 
 /**
  * Possible value for an API url scheme.
@@ -223,6 +224,10 @@ export interface SwaggerInfo {
      */
     methods?: string[];
     /**
+     * The middlewares, which are defined for that route.
+     */
+    middlewares?: RequestHandler[];
+    /**
      * Custom options.
      */
     options?: SwaggerOptions;
@@ -275,6 +280,10 @@ export interface SwaggerPathDefinitionUpdaterContext {
      * The HTTP method.
      */
     method: string;
+    /**
+     * The middlewares, which are defined for that route.
+     */
+    middlewares: RequestHandler[];
     /**
      * The route path.
      */
@@ -540,6 +549,7 @@ export function setupSwaggerUI(
                                     doesValidate: !!asArray(si.controllerMethod[REQUEST_VALIDATORS]).length,
                                     hasAuthorize: !_.isNil(si.controllerMethod[AUTHORIZER_OPTIONS]),
                                     method: m.toUpperCase(),
+                                    middlewares: asArray(si.middlewares),
                                     path: routePath,
                                 };
 

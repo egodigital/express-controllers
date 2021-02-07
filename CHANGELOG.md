@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+# 7.2.0
+
+* add `middlewares` property to [SwaggerPathDefinitionUpdaterContext](https://egodigital.github.io/express-controllers/interfaces/_swagger_.swaggerpathdefinitionupdatercontext.html) interface
+
 # 7.1.0
 
 * add global `schema` namespace to [joi](https://www.npmjs.com/package/joi) module, used by that library

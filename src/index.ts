@@ -1507,23 +1507,27 @@ function createRouteInitializerForMethod(
 
     const UPDATE_SWAGGER_INFO = (p: RouterPath) => {
         const SI: SwaggerInfo = VALUE[SWAGGER_INFO];
-        if (!_.isNil(SI)) {
-            p = normalizeRoutePath(
-                path.join(
-                    SI.controllerRootPath, toStringSafe(p)
-                )
-            );
-
-            if (_.isNil(SI.groupedRouterMethods[p])) {
-                SI.groupedRouterMethods[p] = [];
-            }
-
-            if (SI.groupedRouterMethods[p].indexOf(method) < 0) {
-                SI.groupedRouterMethods[p].push(
-                    method
-                );
-            }
+        if (_.isNil(SI)) {
+            return;
         }
+
+        p = normalizeRoutePath(
+            path.join(
+                SI.controllerRootPath, toStringSafe(p)
+            )
+        );
+
+        if (_.isNil(SI.groupedRouterMethods[p])) {
+            SI.groupedRouterMethods[p] = [];
+        }
+
+        if (SI.groupedRouterMethods[p].indexOf(method) < 0) {
+            SI.groupedRouterMethods[p].push(
+                method
+            );
+        }
+
+        SI.middlewares = asArray(routeMiddlewares);
     };
 
     createRouteInitializer(
