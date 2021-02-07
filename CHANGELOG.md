@@ -1,5 +1,9 @@
 # Change Log (@egodigital/express-controllers)
 
+# 8.0.0
+
+* `this` object of a [Swagger Path Definition updater function](__updateSwaggerPath), now is the underlying controller instance
+
 # 7.2.0
 
 * add `middlewares` property to [SwaggerPathDefinitionUpdaterContext](https://egodigital.github.io/express-controllers/interfaces/_swagger_.swaggerpathdefinitionupdatercontext.html) interface

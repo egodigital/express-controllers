@@ -553,7 +553,7 @@ export function setupSwaggerUI(
                                     path: routePath,
                                 };
 
-                                pathDefinitionUpdater(
+                                pathDefinitionUpdater.bind(si.controller)(
                                     UPDATER_CTX
                                 );
 
